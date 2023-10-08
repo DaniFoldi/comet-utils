@@ -40,6 +40,7 @@ export class Server<
   constructor(private options: ServerOptions<SBefore, SAfter, IsDo> = {}) {
     this.router = new Router<SBefore, SAfter, IsDo>(options)
     this.route = this.router.register
+    // this.openapi = function(){}
   }
 
   public handler = async (
