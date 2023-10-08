@@ -51,6 +51,7 @@ export interface RouterOptions {
 
 export class Router<
   const SBefore extends MiddlewareList,
+  const SAfter extends MiddlewareList,
   const IsDo extends boolean = false
 > {
 
