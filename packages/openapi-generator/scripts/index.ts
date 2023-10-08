@@ -7,7 +7,7 @@ import { defineCommand, runMain } from 'citty'
 import { Route } from './router'
 import { Method } from './types'
 import { Server } from './server'
-import { OpenApi, OpenApiOptions, routeToOpenApiOperation } from './openapi'
+import { Types, OpenApiOptions, routeToOpenApiOperation } from './types'
 
 
 const mainCommand = defineCommand({
@@ -212,7 +212,7 @@ async function generate(args: {input: string; output: string; info: string; date
     ungroupedRoutes[pathname] = objects // add the filtered route to the correct pathname
   })
 
-  const paths: OpenApi['paths'] = Object.fromEntries(Object.entries(ungroupedRoutes).map(([ pathname, cometRoutes ]) => {
+  const paths: Types['paths'] = Object.fromEntries(Object.entries(ungroupedRoutes).map(([ pathname, cometRoutes ]) => {
     return [
       (pathname.startsWith('/') ? pathname : `/${pathname}`) as `/${string}`,
       Object.fromEntries(cometRoutes.map(route => ([ route.method.toLowerCase(), routeToOpenApiOperation(route) ])))

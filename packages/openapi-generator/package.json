@@ -1,0 +1,56 @@
+{
+  "type": "module",
+  "name": "@comet-utils/openapi-generator",
+  "version": "0.1.0",
+  "description": "Openapi generator for comet",
+  "scripts": {
+    "build": "esbuild --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --target=es2022 scripts/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc"
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": "./dist/bin.mjs",
+  "main": "./scripts/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DaniFoldi/comet-utils.git"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "cloudflare",
+    "workers",
+    "routing",
+    "comet",
+    "router",
+    "openapi",
+    "openapi generator",
+    "comet utils"
+  ],
+  "author": "DaniFoldi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DaniFoldi/comet-utils/issues"
+  },
+  "homepage": "https://github.com/DaniFoldi/comet-utils#readme",
+  "dependencies": {
+    "@babel/parser": "^7.22.14",
+    "@babel/traverse": "^7.22.11",
+    "citty": "^0.1.4",
+    "urlpattern-polyfill": "^9.0.0",
+    "zod": "^3.22.4",
+    "zod-to-json-schema": "^3.18.1"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.22.11",
+    "@neoaren/comet": "^3.2.0",
+    "@types/babel__traverse": "^7.20.1",
+    "@types/node": "^20.5.9",
+    "bundled-eslint-config": "^0.1.6",
+    "esbuild": "^0.19.4",
+    "eslint": "^8.51.0",
+    "some-tsconfig-preset": "^1.0.0",
+    "typescript": "^5.2.2"
+  }
+}

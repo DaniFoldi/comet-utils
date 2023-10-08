@@ -40,4 +40,5 @@ node_modules/
 .DS_Store
 
 # Production build
-dist
+**/dist
+metafile.json
