@@ -27,6 +27,10 @@ export const mainCommand = defineCommand({
     base: {
       type: 'string',
       default: 'openapi-base.json'
+    },
+    export: {
+      type: 'string',
+      default: ''
     }
   },
   async run({ args }) {

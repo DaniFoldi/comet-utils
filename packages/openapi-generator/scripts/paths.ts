@@ -50,7 +50,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
 
   const ungroupedRoutes: { [pathname: string]: Route[] } = {}
 
-  Object.entries(groupedRoutes).map(([pathname, routeMethods]) => {
+  Object.entries(groupedRoutes).map(([ pathname, routeMethods ]) => {
     const foundRoutes: Route[] = []
 
     for (const method of Object.values(routeMethods)) {

@@ -54,11 +54,12 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     await import('urlpattern-polyfill')
   }
 
-  // @ts-expect-error dynamically import tmp.js
-  // eslint-disable-next-line import/no-unresolved
-  const tmpImport = await import('../tmp.js')
+  // resolve and import tmpfile from cwd
+  const tmpImport = await import(new URL(tmpFilename, `file://${process.cwd()}/`).href)
 
-  const server: Server<never, never, never> = tmpImport.workerComet
+  const server: Server<never, never, never> = args.export === ''
+    ? tmpImport[Object.keys(tmpImport).find(key => key !== 'default') ?? 'default']
+    : tmpImport[args.export]
   const router = Server.getRouter(server)
   const routes = router.getRoutes()
 
