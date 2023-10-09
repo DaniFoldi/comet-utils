@@ -1,9 +1,3 @@
-import { z } from 'zod'
-import { zodToJsonSchema } from 'zod-to-json-schema'
-import { Route } from '../src/router'
-import { Status } from '../src/reply'
-
-
 // Based on https://spec.openapis.org/oas/latest.html#version-3-1-0
 
 // TODO possibly type url as template type
@@ -156,8 +150,15 @@ type RequestBody = {
   required?: boolean
 }
 
+type APIResponse = {
+  description: string
+  headers?: Record<string, Header | Reference>
+  content?: Record<string, MediaType>
+  links?: Record<string, Link | Reference>
+}
+
 type Responses = {
-  [code in 'default' | number]?: Response | Reference
+  [code in 'default' | number]?: APIResponse | Reference
 }
 
 type SecurityRequirement = {
@@ -179,8 +180,10 @@ type Operation = {
   servers?: Server[]
 }
 
+type Paths = Record<`/${string}`, PathItem>
 
-export interface Types {
+
+type OpenAPI = {
   openapi: '3.1.0'
   info: {
     title: string
@@ -201,7 +204,7 @@ export interface Types {
   }
   jsonSchemaDialect?: string
   servers?: Array<Server>
-  paths: Record<`/${string}`, PathItem>
+  paths: Paths
   webhooks?: Record<string, PathItem | Reference>
   components?: {
     schemas?: Record<string, Schema>
@@ -229,74 +232,4 @@ export interface Types {
   externalDocs?: ExternalDocumentation
 }
 
-export type OpenApiOptions = Omit<Types, 'openapi' | 'paths' | 'webhooks' | 'components' | 'security'>
-
-
-function objectSchemaToParameters(schema?: z.ZodType): Array<[string, Record<string, unknown>, boolean]> | undefined {
-  if (!schema) return undefined
-  try {
-    const objectSchema = schema as z.SomeZodObject
-    return Object.keys(objectSchema.keyof().enum)
-      .map(key => [ key, zodToJsonSchema(objectSchema.shape[key].isOptional() ? (objectSchema.shape[key] as z.ZodOptional<z.ZodAny>).unwrap() : objectSchema.shape[key], { target: 'openApi3' }), objectSchema.shape[key].isOptional() ])
-  } catch {
-    return undefined
-  }
-}
-
-const replies: Record<Status, number> = {
-  [Status.Continue]: 100,
-  [Status.SwitchingProtocols]: 101,
-  [Status.Processing]: 102,
-  [Status.Ok]: 200,
-  [Status.Created]: 201,
-  [Status.Accepted]: 202,
-  [Status.NonAuthoritativeInformation]: 203,
-  [Status.NoContent]: 204,
-  [Status.ResetContent]: 205,
-  [Status.PartialContent]: 206,
-  [Status.MultiStatus]: 207,
-  [Status.MultipleChoices]: 300,
-  [Status.MovedPermanently]: 301,
-  [Status.MovedTemporarily]: 302,
-  [Status.SeeOther]: 303,
-  [Status.NotModified]: 304,
-  [Status.UseProxy]: 305,
-  [Status.TemporaryRedirect]: 307,
-  [Status.PermanentRedirect]: 308,
-  [Status.BadRequest]: 400,
-  [Status.Unauthorized]: 401,
-  [Status.PaymentRequired]: 402,
-  [Status.Forbidden]: 403,
-  [Status.NotFound]: 404,
-  [Status.MethodNotAllowed]: 405,
-  [Status.NotAcceptable]: 406,
-  [Status.ProxyAuthenticationRequired]: 407,
-  [Status.RequestTimeout]: 408,
-  [Status.Conflict]: 409,
-  [Status.Gone]: 410,
-  [Status.LengthRequired]: 411,
-  [Status.PreconditionFailed]: 412,
-  [Status.RequestTooLong]: 413,
-  [Status.RequestUriTooLong]: 414,
-  [Status.UnsupportedMediaType]: 415,
-  [Status.RequestedRangeNotSatisfiable]: 416,
-  [Status.ExpectationFailed]: 417,
-  [Status.ImATeapot]: 418,
-  [Status.InsufficientSpaceOnResource]: 419,
-  [Status.MethodFailure]: 420,
-  [Status.MisdirectedRequest]: 421,
-  [Status.UnprocessableEntity]: 422,
-  [Status.FailedDependency]: 424,
-  [Status.PreconditionRequired]: 428,
-  [Status.TooManyRequests]: 429,
-  [Status.RequestHeaderFieldsTooLarge]: 431,
-  [Status.UnavailableForLegalReasons]: 451,
-  [Status.InternalServerError]: 500,
-  [Status.NotImplemented]: 501,
-  [Status.BadGateway]: 502,
-  [Status.ServiceUnavailable]: 503,
-  [Status.GatewayTimeout]: 504,
-  [Status.HttpVersionNotSupported]: 505,
-  [Status.InsufficientStorage]: 507,
-  [Status.NetworkAuthenticationRequired]: 511
-}
+export { type OpenAPI, type Operation, type Parameter, type Paths, type PathItem, type Responses }

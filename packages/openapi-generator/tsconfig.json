@@ -1,6 +1,7 @@
 {
   "extends": "some-tsconfig-preset/node",
   "include": [
-    "packages/openapi-generator/src/**/*"
+    "scripts/**/*",
+    "*.d.ts"
   ]
 }

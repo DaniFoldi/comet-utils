@@ -19,6 +19,9 @@ importers:
       citty:
         specifier: ^0.1.4
         version: 0.1.4
+      defu:
+        specifier: ^6.1.2
+        version: 6.1.2
       urlpattern-polyfill:
         specifier: ^9.0.0
         version: 9.0.0
@@ -35,6 +38,9 @@ importers:
       '@neoaren/comet':
         specifier: ^3.2.0
         version: 3.2.0
+      '@total-typescript/ts-reset':
+        specifier: ^0.5.1
+        version: 0.5.1
       '@types/babel__traverse':
         specifier: ^7.20.1
         version: 7.20.2
@@ -51,8 +57,8 @@ importers:
         specifier: ^8.51.0
         version: 8.51.0
       some-tsconfig-preset:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.1.0
+        version: 1.1.0
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -781,6 +787,10 @@ packages:
 
   /@sinclair/typebox@0.27.8:
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+    dev: true
+
+  /@total-typescript/ts-reset@0.5.1:
+    resolution: {integrity: sha512-AqlrT8YA1o7Ff5wPfMOL0pvL+1X+sw60NN6CcOCqs658emD6RfiXhF7Gu9QcfKBH7ELY2nInLhKSCWVoNL70MQ==}
     dev: true
 
   /@types/babel__traverse@7.20.2:
@@ -1585,7 +1595,6 @@ packages:
 
   /defu@6.1.2:
     resolution: {integrity: sha512-+uO4+qr7msjNNWKYPHqN/3+Dx3NFkmIzayk2L1MyZQlvgZb/J1A0fo410dpKrN2SnqFjt8n4JL8fDJE0wIgjFQ==}
-    dev: true
 
   /dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
@@ -3687,8 +3696,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /some-tsconfig-preset@1.0.0:
-    resolution: {integrity: sha512-5UWMJd3w2xZ154OVhkyQdAcQsK4DzL6egZsROeGfNt4Uax4cyZ1SVEGaiyJ93YnpP2/RUxrr7fIfJODr/1pAhg==}
+  /some-tsconfig-preset@1.1.0:
+    resolution: {integrity: sha512-QtPsgNGLBYvSvAbsYSs1YkSYJ65NQDM+0fZu7EE65if/IHCjyDAVBYyqq+M8agsE1MA4//r27Ug/xiTmMHO+Lw==}
     dev: true
 
   /source-map-js@1.0.2:
