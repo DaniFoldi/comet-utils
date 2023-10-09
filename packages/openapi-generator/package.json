@@ -54,5 +54,8 @@
     "eslint": "^8.51.0",
     "some-tsconfig-preset": "^1.1.0",
     "typescript": "^5.2.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
