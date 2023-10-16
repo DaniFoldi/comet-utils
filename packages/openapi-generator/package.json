@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "description": "Openapi generator for comet",
   "scripts": {
-    "build": "esbuild --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --packages=external --format=esm --target=es2022 scripts/index.ts",
+    "build": "esbuild --banner:js=\"#! /usr/bin/env node\" --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --packages=external --format=esm --target=es2022 scripts/index.ts",
     "lint": "eslint .",
     "typecheck": "tsc"
   },
