@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "esbuild --banner:js=\"#! /usr/bin/env node\" --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --packages=external --format=esm --target=es2022 scripts/index.ts",
