@@ -38,13 +38,32 @@ type Parameter = {
    * @deprecated
    */
   allowEmptyValue?: boolean
-  // TODO style ?
 } & ({
-  in: 'path'
-  required: true
-} | {
-  in: 'query' | 'header' | 'cookie'
-  required?: boolean
+    in: 'path'
+    required: true
+    style?: 'matrix' | 'label' | 'simple'
+  } | ({
+    required?: boolean
+  } & ({
+    in: 'query'
+    style?: 'form' | 'spaceDelimited' | 'pipeDelimited' | 'deepObject'
+  } | {
+    in: 'header'
+    style?: 'simple'
+  } | {
+    in: 'cookie'
+    style?: 'form'
+  })
+)) & ({
+    explode?: boolean
+    allowReserved?: boolean
+    schema: Schema
+  } | {
+    content: Record<string, MediaType>
+  }) & ({
+    example?: unknown
+  } | {
+    examples?: Map<string, Example | Reference>
 })
 
 type Reference = {
@@ -62,23 +81,24 @@ type Example = {
   externalValue?: string
 })
 
-type Schema = {
+// TODO better types
+type Schema = object & {
   discriminator?: {
     propertyName: string
     mapping?: Record<string, string>
   }
-  xml: {
+  xml?: {
     name?: string
     namespace?: string
     prefix?: string
     attribute?: boolean
     wrapped?: boolean
   }
-  externalDocs: ExternalDocumentation
+  externalDocs?: ExternalDocumentation
   /**
    * @deprecated
    */
-  example: unknown
+  example?: unknown
 }
 
 type Header = Omit<Parameter, 'name' | 'in'>

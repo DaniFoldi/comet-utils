@@ -2,29 +2,30 @@ import {  Status } from '@neoaren/comet'
 import { convertSchema } from './schema'
 import type { Operation, Parameter, Responses } from './types'
 import type { Route } from '@neoaren/comet'
-import type { SomeZodObject, ZodType } from 'zod'
+import type { ZodAny, ZodOptional, SomeZodObject, ZodType, ZodTypeAny } from 'zod'
 
 
 function objectSchemaToParameters(schema: ZodType | undefined, where: Parameter['in']): Array<Parameter> | undefined {
   if (!schema) return undefined
   try {
     const objectSchema = schema as SomeZodObject
+    // @ts-expect-error This should be correct, but there is something wrong with the Parameter type
     return where === 'path'
       ? Object.keys(objectSchema.keyof().enum)
         .map(name => ({
           name,
           in: where,
-          required: true
+          required: true,
+          schema: convertSchema(objectSchema.shape[name] as ZodType)
         }))
       : Object.keys(objectSchema.keyof().enum)
         .map(name => ({
           name,
           in: where,
-          required: !objectSchema.shape[name]?.isOptional()
-          /* schema: convertSchema(
-          objectSchema.shape[name]?.isOptional()
+          required: !objectSchema.shape[name]?.isOptional(),
+          schema: convertSchema(objectSchema.shape[name]?.isOptional()
             ? (objectSchema.shape[name] as ZodOptional<ZodAny>).unwrap()
-            : objectSchema.shape[name] as ZodTypeAny) */
+            : objectSchema.shape[name] as ZodTypeAny)
         }))
   } catch {
     return undefined
