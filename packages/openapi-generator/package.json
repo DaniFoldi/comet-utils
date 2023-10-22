@@ -12,7 +12,7 @@
     "dist"
   ],
   "bin": "./dist/bin.mjs",
-  "main": "./scripts/index.ts",
+  "main": "./dist/bin.mjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DaniFoldi/comet-utils.git"
