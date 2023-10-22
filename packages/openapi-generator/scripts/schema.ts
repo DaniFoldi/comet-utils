@@ -2,10 +2,9 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 import type { ZodType } from 'zod'
 
 
-export function convertSchema(input: ZodType, path: string[]) {
+export function convertSchema(input: ZodType) {
   return zodToJsonSchema(input, {
-    basePath: path,
-    '$refStrategy': 'root',
+    '$refStrategy': 'none',
     errorMessages: true,
     target: 'openApi3'
   })

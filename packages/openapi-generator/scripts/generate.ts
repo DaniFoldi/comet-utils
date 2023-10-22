@@ -5,6 +5,7 @@ import { build } from 'esbuild'
 import { attachComments } from './comments'
 import { buildPaths } from './paths'
 import { randomName } from './random'
+import { validate } from './validate'
 import type { mainCommand } from './index'
 import type { CommandDef, ParsedArgs } from 'citty'
 
@@ -72,6 +73,10 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const output = defu({ openapi: '3.1.0' }, data, { paths })
     await writeFile(args.output, JSON.stringify(output, null, 2))
+
+    if (await validate(args.output)) {
+      console.log('Generated OpenAPI file looks valid')
+    }
   } catch (error) {
     console.error(error)
   } finally {

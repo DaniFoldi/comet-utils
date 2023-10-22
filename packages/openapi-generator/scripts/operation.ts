@@ -97,9 +97,7 @@ export function routeToOpenApiOperation(route: Route): Operation {
   const parameters = [ ...(path ?? []), ...(query ?? []) ]
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { $schema = undefined, ...bodySchema } = route.schemas.body
-    ? convertSchema(route.schemas.body, [ '#', 'paths', route.pathname, route.method.toLowerCase(), 'content' ])
-    : {}
+  const { $schema = undefined, ...bodySchema } = route.schemas.body ? convertSchema(route.schemas.body) : {}
   const requestBody = bodySchema ? {
     content: Object.fromEntries(Object.entries(bodySchema)
       .filter(entry => entry[1] !== undefined)) as { [key: string]: object },
@@ -107,10 +105,7 @@ export function routeToOpenApiOperation(route: Route): Operation {
   } : undefined
   const responses = route.replies
     ? Object.fromEntries(Object.entries(route.replies).map(reply =>
-      [
-        replies[reply[0] as Status],
-        convertSchema(reply[1], [ '#', 'paths', route.pathname, route.method.toLowerCase(), 'responses', replies[reply[0] as Status].toString() ])
-      ])) as Responses
+      [ replies[reply[0] as Status], convertSchema(reply[1]) ])) as Responses
     : undefined
 
   return {
