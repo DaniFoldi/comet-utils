@@ -17,7 +17,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     entryPoints: [ args.input ],
     bundle: true,
     // packages: 'external',
-    external: [ '@neoaren/comet', 'zod' ],
+    external: [ '@neoaren/comet', 'zod', 'node:*', 'cloudflare:', 'astro:*' ],
     legalComments: 'inline',
     outfile: tmpFilename,
     format: 'esm',
@@ -44,32 +44,37 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     ]
   })
 
-  /*
-    const builtWorker = await readFile(tmpFilename, 'utf8')
-    await writeFile(tmpFilename, builtWorker.replace('@neoaren/comet', './dist/index.mjs'), 'utf8')
-  */
+  try {
 
-  // @ts-expect-error URLPattern is not typed
-  if (!globalThis.URLPattern) {
-    await import('urlpattern-polyfill')
+    /*
+      const builtWorker = await readFile(tmpFilename, 'utf8')
+      await writeFile(tmpFilename, builtWorker.replace('@neoaren/comet', './dist/index.mjs'), 'utf8')
+    */
+
+    // @ts-expect-error URLPattern is not typed
+    if (!globalThis.URLPattern) {
+      await import('urlpattern-polyfill')
+    }
+
+    // resolve and import tmpfile from cwd
+    const tmpImport = await import(new URL(tmpFilename, `file://${process.cwd()}/`).href)
+
+    const server: Server<never, never, never> = args.export === ''
+      ? tmpImport[Object.keys(tmpImport).find(key => key !== 'default') ?? 'default']
+      : tmpImport[args.export]
+    const router = Server.getRouter(server)
+    const routes = router.getRoutes()
+
+    const paths = buildPaths(routes, args.date)
+
+    const code = await readFile(tmpFilename, { encoding: 'utf8' })
+    attachComments(code, paths)
+
+    const output = defu({ openapi: '3.1.0' }, data, { paths })
+    await writeFile(args.output, JSON.stringify(output, null, 2))
+  } catch (error) {
+    console.error(error)
+  } finally {
+    await unlink(tmpFilename)
   }
-
-  // resolve and import tmpfile from cwd
-  const tmpImport = await import(new URL(tmpFilename, `file://${process.cwd()}/`).href)
-
-  const server: Server<never, never, never> = args.export === ''
-    ? tmpImport[Object.keys(tmpImport).find(key => key !== 'default') ?? 'default']
-    : tmpImport[args.export]
-  const router = Server.getRouter(server)
-  const routes = router.getRoutes()
-
-  const paths = buildPaths(routes, args.date)
-
-  const code = await readFile(tmpFilename, { encoding: 'utf8' })
-  attachComments(code, paths)
-
-  await unlink(tmpFilename)
-
-  const output = defu({ openapi: '3.1.0' }, data, { paths })
-  await writeFile(args.output, JSON.stringify(output, null, 2))
 }

@@ -1,5 +1,5 @@
 import {  Status } from '@neoaren/comet'
-import { zodToJsonSchema } from 'zod-to-json-schema'
+import { convertSchema } from './schema'
 import type { Operation, Parameter, Responses } from './types'
 import type { Route } from '@neoaren/comet'
 import type { SomeZodObject, ZodType } from 'zod'
@@ -21,12 +21,10 @@ function objectSchemaToParameters(schema: ZodType | undefined, where: Parameter[
           name,
           in: where,
           required: !objectSchema.shape[name]?.isOptional()
-          /* schema: zodToJsonSchema(
+          /* schema: convertSchema(
           objectSchema.shape[name]?.isOptional()
             ? (objectSchema.shape[name] as ZodOptional<ZodAny>).unwrap()
-            : objectSchema.shape[name] as ZodTypeAny, {
-          target: 'openApi3'
-        }) */
+            : objectSchema.shape[name] as ZodTypeAny) */
         }))
   } catch {
     return undefined
@@ -99,14 +97,20 @@ export function routeToOpenApiOperation(route: Route): Operation {
   const parameters = [ ...(path ?? []), ...(query ?? []) ]
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { $schema = undefined, ...bodySchema } = route.schemas.body ? zodToJsonSchema(route.schemas.body, { target: 'openApi3' }) : {}
+  const { $schema = undefined, ...bodySchema } = route.schemas.body
+    ? convertSchema(route.schemas.body, [ '#', 'paths', route.pathname, route.method.toLowerCase(), 'content' ])
+    : {}
   const requestBody = bodySchema ? {
     content: Object.fromEntries(Object.entries(bodySchema)
-      .filter(entry => entry[1] !== undefined)) as { [key: string]: object }
+      .filter(entry => entry[1] !== undefined)) as { [key: string]: object },
+    required: !route.schemas.body?.isOptional()
   } : undefined
   const responses = route.replies
     ? Object.fromEntries(Object.entries(route.replies).map(reply =>
-      [ replies[reply[0] as Status], zodToJsonSchema(reply[1], { target: 'openApi3' }) ])) as Responses
+      [
+        replies[reply[0] as Status],
+        convertSchema(reply[1], [ '#', 'paths', route.pathname, route.method.toLowerCase(), 'responses', replies[reply[0] as Status].toString() ])
+      ])) as Responses
     : undefined
 
   return {
