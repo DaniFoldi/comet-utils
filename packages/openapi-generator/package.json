@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "esbuild --banner:js=\"#! /usr/bin/env node\" --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --packages=external --format=esm --target=es2022 scripts/index.ts",
@@ -37,6 +37,7 @@
   "dependencies": {
     "@babel/parser": "^7.22.14",
     "@babel/traverse": "^7.22.11",
+    "@neoaren/comet": "^3.2.0",
     "citty": "^0.1.4",
     "defu": "^6.1.2",
     "urlpattern-polyfill": "^9.0.0",
@@ -45,7 +46,6 @@
   },
   "devDependencies": {
     "@babel/types": "^7.22.11",
-    "@neoaren/comet": "^3.2.0",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/babel__traverse": "^7.20.1",
     "@types/node": "^20.5.9",
