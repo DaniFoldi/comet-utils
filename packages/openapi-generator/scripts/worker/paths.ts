@@ -1,7 +1,7 @@
 import { Method } from '@neoaren/comet'
 import { methods } from './methods'
 import { routeToOpenApiOperation } from './operation'
-import type { Paths } from './types'
+import type { Paths } from '../types'
 import type { Route } from '@neoaren/comet'
 
 

@@ -1,6 +1,6 @@
-import {  Status } from '@neoaren/comet'
+import { Status } from '@neoaren/comet'
 import { convertSchema } from './schema'
-import type { Operation, Parameter, Responses } from './types'
+import type { Operation, Parameter, Responses } from '../types'
 import type { Route } from '@neoaren/comet'
 import type { ZodAny, ZodOptional, SomeZodObject, ZodType, ZodTypeAny } from 'zod'
 

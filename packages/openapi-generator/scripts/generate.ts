@@ -1,12 +1,13 @@
 import { readFile, unlink, writeFile } from 'node:fs/promises'
-import { Server } from '@neoaren/comet'
+import { join, dirname } from 'node:path'
 import { defu } from 'defu'
 import { build } from 'esbuild'
+import { unstable_dev } from 'wrangler'
 import { attachComments } from './comments'
-import { buildPaths } from './paths'
 import { randomName } from './random'
 import { validate } from './validate'
 import type { mainCommand } from './index'
+import type { Paths } from './types'
 import type { CommandDef, ParsedArgs } from 'citty'
 
 
@@ -17,8 +18,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   await build({
     entryPoints: [ args.input ],
     bundle: true,
-    // packages: 'external',
-    external: [ '@neoaren/comet', 'zod', 'node:*', 'cloudflare:', 'astro:*' ],
+    external: [ 'node:*', 'cloudflare:' ],
     legalComments: 'inline',
     outfile: tmpFilename,
     format: 'esm',
@@ -46,27 +46,20 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   })
 
   try {
+    console.log(tmpFilename)
+    const script = await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' })
 
-    /*
-      const builtWorker = await readFile(tmpFilename, 'utf8')
-      await writeFile(tmpFilename, builtWorker.replace('@neoaren/comet', './dist/index.mjs'), 'utf8')
-    */
+    const wrapFetch = (await readFile(join(dirname(import.meta.url), 'wrapFetch.js'), { encoding: 'utf8' }))
+      .replace(/export {.*?}/, '')
 
-    // @ts-expect-error URLPattern is not typed
-    if (!globalThis.URLPattern) {
-      await import('urlpattern-polyfill')
-    }
+    const wrappedScript = `${wrapFetch}\n${script.replace(/(\w+) as default/, 'globalThis.wrapFetch($1) as default')}`
+    console.log(wrappedScript.slice(-1000))
+    const worker = await unstable_dev(wrappedScript)
 
-    // resolve and import tmpfile from cwd
-    const tmpImport = await import(new URL(tmpFilename, `file://${process.cwd()}/`).href)
+    const response = await worker.fetch(`/__generate_openapi__?date=${args.date}`)
+    const paths = await response.json() as Paths
 
-    const server: Server<never, never, never> = args.export === ''
-      ? tmpImport[Object.keys(tmpImport).find(key => key !== 'default') ?? 'default']
-      : tmpImport[args.export]
-    const router = Server.getRouter(server)
-    const routes = router.getRoutes()
-
-    const paths = buildPaths(routes, args.date)
+    await worker.stop()
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
     attachComments(code, paths)
@@ -80,6 +73,6 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   } catch (error) {
     console.error(error)
   } finally {
-    await unlink(tmpFilename)
+    // await unlink(tmpFilename)
   }
 }
