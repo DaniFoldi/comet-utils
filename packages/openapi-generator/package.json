@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "bash ./build.sh",
