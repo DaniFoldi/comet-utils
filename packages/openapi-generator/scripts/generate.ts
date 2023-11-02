@@ -1,5 +1,6 @@
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defu } from 'defu'
 import { build } from 'esbuild'
 import { unstable_dev } from 'wrangler'
@@ -49,10 +50,11 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     console.log(tmpFilename)
     const script = await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' })
 
-    const wrapFetch = (await readFile(join(dirname(import.meta.url), 'wrapFetch.js'), { encoding: 'utf8' }))
+    const wrapFetch = (await readFile(join(dirname(fileURLToPath(import.meta.url)), 'wrapFetch.js'), { encoding: 'utf8' }))
       .replace(/export {.*?}/, '')
+      .replace('function wrapFetch', 'globalThis.wrapFetch = function wrapFetch')
 
-    const wrappedScript = `${wrapFetch}\n${script.replace(/(\w+) as default/, 'globalThis.wrapFetch($1) as default')}`
+    const wrappedScript = `(function (globalThis) {${wrapFetch}})(globalThis);\n${script.replaceAll(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')}`
     console.log(wrappedScript.slice(-1000))
     const worker = await unstable_dev(wrappedScript)
 
