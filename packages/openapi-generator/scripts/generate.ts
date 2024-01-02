@@ -19,7 +19,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   await build({
     entryPoints: [ args.input ],
     bundle: true,
-    external: [ 'node:*', 'cloudflare:' ],
+    external: [ 'node:*', 'cloudflare:*' ],
     legalComments: 'inline',
     outfile: tmpFilename,
     format: 'esm',
@@ -47,16 +47,21 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   })
 
   try {
-    console.log(tmpFilename)
     const script = await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' })
 
     const wrapFetch = (await readFile(join(dirname(fileURLToPath(import.meta.url)), 'wrapFetch.js'), { encoding: 'utf8' }))
-      .replace(/export {.*?}/, '')
+      .replace(/export ?{.*?}/s, '')
       .replace('function wrapFetch', 'globalThis.wrapFetch = function wrapFetch')
 
-    const wrappedScript = `(function (globalThis) {${wrapFetch}})(globalThis);\n${script.replaceAll(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')}`
-    console.log(wrappedScript.slice(-1000))
-    const worker = await unstable_dev(wrappedScript)
+    const wrappedScript = `(function (globalThis) {${wrapFetch}})(globalThis);\n${script.replace(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')}`
+
+    await writeFile(tmpFilename, wrappedScript)
+
+    const worker = await unstable_dev(tmpFilename, {
+      experimental: {
+        disableExperimentalWarning: true
+      }
+    })
 
     const response = await worker.fetch(`/__generate_openapi__?date=${args.date}`)
     const paths = await response.json() as Paths

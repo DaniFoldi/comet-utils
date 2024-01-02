@@ -1,6 +1,5 @@
 // Based on https://spec.openapis.org/oas/latest.html#version-3-1-0
 
-// TODO possibly type url as template type
 // TODO possibly type expressions as defined in https://spec.openapis.org/oas/latest.html#runtime-expressions
 
 type Server = {
