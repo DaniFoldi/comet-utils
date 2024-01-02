@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "bash ./build.sh",
@@ -35,28 +35,28 @@
   },
   "homepage": "https://github.com/DaniFoldi/comet-utils#readme",
   "dependencies": {
-    "@babel/parser": "^7.23.0",
-    "@babel/traverse": "^7.23.2",
-    "@neoaren/comet": "^3.2.0",
+    "@babel/parser": "^7.23.6",
+    "@babel/traverse": "^7.23.7",
+    "@neoaren/comet": "^3.2.1",
     "@readme/openapi-parser": "^2.5.0",
-    "citty": "^0.1.4",
+    "citty": "^0.1.5",
     "defu": "^6.1.3",
-    "esbuild": "^0.19.5",
+    "esbuild": "^0.19.11",
     "wrangler": "https://prerelease-registry.devprod.cloudflare.dev/workers-sdk/runs/6720209255/npm-package-wrangler-4175",
     "zod": "^3.22.4",
-    "zod-to-json-schema": "^3.21.4"
+    "zod-to-json-schema": "^3.22.3"
   },
   "devDependencies": {
-    "@babel/types": "^7.23.0",
+    "@babel/types": "^7.23.6",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/babel__traverse": "^7.20.3",
-    "@types/node": "^20.8.10",
-    "bundled-eslint-config": "^0.2.11",
-    "eslint": "^8.52.0",
-    "knip": "^2.38.6",
-    "simple-knip-config": "^0.1.0",
+    "@types/babel__traverse": "^7.20.5",
+    "@types/node": "^20.10.6",
+    "bundled-eslint-config": "^0.2.18",
+    "eslint": "^8.56.0",
+    "knip": "^3.10.0",
+    "simple-knip-config": "^0.2.0",
     "some-tsconfig-preset": "^1.5.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.3"
   },
   "publishConfig": {
     "access": "public"
