@@ -20,7 +20,7 @@ async function textReplacements(text: string): Promise<string> {
   text = text.replaceAll('/**', '/*!')
 
   // make the *server* variable global, so it can be used in the generated code
-  if (/import ?{.*?\bserver\b.*?} ?from '@neoaren\/comet'/s.test(text) && !/durableObject["']?\s*:\s*true/.test(text)) {
+  if (/import ?{.*?\bserver\b.*?} ?from ["']@neoaren\/comet["']/s.test(text) && !/durableObject["']?\s*:\s*true/.test(text)) {
     const serverVariable = text.match(/(const|let) (\S+) ?= ?server\(/s)?.[2]
     text = `${text}\nglobalThis.worker = ${serverVariable}`
   }
@@ -64,13 +64,15 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   })
 
   try {
-    const script = await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' })
+    const script = (await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' }))
+      .replace(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')
+      .replaceAll(/import\s*{\s*EmailMessage\s*}\s*from\s*["']cloudflare:email["']/g, 'const EmailMessage = class EmailMessage {}')
 
     const wrapFetch = (await readFile(join(dirname(fileURLToPath(import.meta.url)), 'wrapFetch.js'), { encoding: 'utf8' }))
       .replace(/export ?{.*?}/s, '')
       .replace('function wrapFetch', 'globalThis.wrapFetch = function wrapFetch')
 
-    const wrappedScript = `(function (globalThis) {${wrapFetch}})(globalThis);\n${script.replace(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')}`
+    const wrappedScript = `(function (globalThis) {${wrapFetch}})(globalThis);\n${script}`
 
     await writeFile(tmpFilename, wrappedScript)
 
