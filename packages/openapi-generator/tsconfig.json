@@ -3,5 +3,8 @@
   "include": [
     "scripts/**/*",
     "*.d.ts"
-  ]
+  ],
+  "compilerOptions": {
+    "types": [ "node", "@types/babel__traverse" ]
+  }
 }

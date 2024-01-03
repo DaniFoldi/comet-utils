@@ -6,8 +6,7 @@ import { build } from 'esbuild'
 import { unstable_dev } from 'wrangler'
 import { attachComments } from './comments'
 import { randomName } from './random'
-import { validate } from './validate'
-import findup from 'findup-sync'
+import temporaryDirectory from 'temp-dir'
 import type { mainCommand } from './index'
 import type { Paths } from './types'
 import type { CommandDef, ParsedArgs } from 'citty'
@@ -29,8 +28,8 @@ async function textReplacements(text: string): Promise<string> {
 }
 
 export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data: object) {
-  const dir = findup('node_modules') ?? process.cwd()
-  const tmpFilename = `./${dir}/tmp-${randomName()}.js`
+  const dir = temporaryDirectory ?? process.cwd()
+  const tmpFilename = `${dir}/tmp-${randomName()}.js`
   await build({
     entryPoints: [ args.input ],
     bundle: true,
@@ -64,7 +63,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   })
 
   try {
-    const script = (await readFile(join(process.cwd(), tmpFilename), { encoding: 'utf8' }))
+    const script = (await readFile(tmpFilename, { encoding: 'utf8' }))
       .replace(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')
       .replaceAll(/import\s*{\s*EmailMessage\s*}\s*from\s*["']cloudflare:email["']/g, 'const EmailMessage = class EmailMessage {}')
 
@@ -94,14 +93,10 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     await worker.stop()
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
-    attachComments(code, paths)
+    attachComments(code, paths, args.access)
 
     const output = defu({ openapi: '3.1.0' }, data, { paths })
     await writeFile(args.output, JSON.stringify(output, null, 2))
-
-    if (await validate(args.output)) {
-      console.log('Generated OpenAPI file looks valid')
-    }
   } catch (error) {
     console.error(error)
   } finally {
