@@ -1,12 +1,14 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.6",
+  "version": "0.2.8",
   "description": "Openapi generator for comet",
   "scripts": {
-    "build": "bash ./build.sh",
+    "build": "pnpm run \"/^build:.*/\"",
     "lint": "eslint --cache .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "build:1": "esbuild --bundle --outfile=dist/wrapFetch.js --sourcemap=linked --metafile=metafile-fetch.json --format=esm --target=es2022 scripts/worker/builder.ts",
+    "build:2": "esbuild --banner:js=\"#! /usr/bin/env node\" --bundle --outfile=dist/bin.mjs --sourcemap=linked --metafile=metafile.json --platform=node --packages=external --format=esm --target=es2022 scripts/index.ts"
   },
   "files": [
     "dist"

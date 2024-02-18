@@ -3,9 +3,11 @@ import type { ZodType } from 'zod'
 
 
 export function convertSchema(input: ZodType) {
-  return zodToJsonSchema(input, {
+  const { $schema, definitions, ...schema } = zodToJsonSchema(input, {
     '$refStrategy': 'none',
     errorMessages: true,
     target: 'openApi3'
   })
+
+  return schema
 }

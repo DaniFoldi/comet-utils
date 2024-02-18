@@ -8,10 +8,11 @@ type JSDocParameters = {
   access: string
   description: string
   summary: string
-  tags: string[]
+  tags: string[],
+  reply: Record<string, { description: string, headers: string[] }>
 }
 
-export function attachComments(code: string, paths: Paths, access: string) {
+export function attachComments(code: string, paths: Paths, access: string, date: string) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
     console.error(astree.errors)
@@ -36,52 +37,57 @@ export function attachComments(code: string, paths: Paths, access: string) {
 
       const methodToCompare = method.toUpperCase()
 
-      let dateToCompare: string
+      //let dateToCompare: string = date
       // TODO
 
       // @ts-expect-error This babel traverse types are wrong
       babelTraverse.default(astree, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ExpressionStatement(path: any) {
+        enter(path: any) {
           if (!path.node.leadingComments) {
             return
           }
 
-          if (path.node.expression.type !== 'CallExpression') {
-            return
+          if (path.node.type === 'ExpressionStatement'){
+            if (path.node.expression.type !== 'CallExpression') {
+              return
+            }
+  
+            const params = path.node.expression.arguments[0]
+            if (!params || params.type !== 'ObjectExpression') {
+              return
+            }
+  
+            const propertiesArray = params.properties.filter((property: any) => property.type === 'ObjectProperty') as ObjectProperty[]
+  
+            //const compatibilityDateValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'compatibilityDate')?.value
+            const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
+            const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
+            //const commentDate = compatibilityDateValue?.type === 'StringLiteral' ? compatibilityDateValue.value : ''
+            const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
+  
+            if (commentMethod !== methodToCompare) {
+              return
+            }
+            /*
+            if (commentDate !== dateToCompare) {
+              return
+            }
+            */
+  
+            if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
+              return
+            }
+  
+            const doc = parseComment(path.node.leadingComments.map((comment: any) => comment.value).join('\n'))
+            operation.description = doc.description
+            operation.summary = doc.summary
+            operation.tags = doc.tags
+            const replyKey = Object.keys(doc.reply)[0] as string
+            operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as { } } }
+            // @ts-expect-error This could be typed, but it's fine :tm:
+            operation.access = doc.access
           }
-
-          const params = path.node.expression.arguments[0]
-          if (!params || params.type !== 'ObjectExpression') {
-            return
-          }
-
-          const propertiesArray = params.properties.filter((property: any) => property.type === 'ObjectProperty') as ObjectProperty[]
-
-          const compatibilityDateValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'compatibilityDate')?.value
-          const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
-          const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
-          const commentDate = compatibilityDateValue?.type === 'StringLiteral' ? compatibilityDateValue.value : ''
-          const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
-
-          if (commentMethod !== methodToCompare) {
-            return
-          }
-
-          if (commentDate !== dateToCompare) {
-            return
-          }
-
-          if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
-            return
-          }
-
-          const doc = parseComment(path.node.leadingComments.map((comment: any) => comment.value).join('\n'))
-          operation.description = doc.description
-          operation.summary = doc.summary
-          operation.tags = doc.tags
-          // @ts-expect-error This could be typed, but it's fine :tm:
-          operation.access = doc.access
         }
       })
 
@@ -115,7 +121,8 @@ function parseComment(comments: string): JSDocParameters {
     access: '',
     description: '',
     summary: '',
-    tags: []
+    tags: [],
+    reply: {}
   }
 
   for (const comment of commentArray) {
@@ -140,6 +147,11 @@ function parseComment(comments: string): JSDocParameters {
       case 'public':
         commentsByType.access = 'public'
         break
+      case 'reply':
+        const info = rest.join(' ').split('-').map(el => el.trim())
+        if (info.length < 2 ) { break }
+        commentsByType.reply[info[0] as string] = { description: info[1] as string, headers: info[2] ? info[2].split(',').map(el => el.trim()) : [] }
+        break
       default:
         console.warn('Unknown comment type:', head)
     }
@@ -147,3 +159,5 @@ function parseComment(comments: string): JSDocParameters {
 
   return commentsByType
 }
+
+

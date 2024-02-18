@@ -2,14 +2,13 @@ import { Status } from '@neoaren/comet'
 import { convertSchema } from './schema'
 import type { Operation, Parameter, Responses } from '../types'
 import type { Route } from '@neoaren/comet'
-import type { ZodAny, ZodOptional, SomeZodObject, ZodType, ZodTypeAny } from 'zod'
+import { type ZodAny, type ZodOptional, type SomeZodObject, type ZodType, type ZodTypeAny, z } from 'zod'
 
 
 function objectSchemaToParameters(schema: ZodType | undefined, where: Parameter['in']): Array<Parameter> | undefined {
   if (!schema) return undefined
   try {
     const objectSchema = schema as SomeZodObject
-    // @ts-expect-error This should be correct, but there is something wrong with the Parameter type
     return where === 'path'
       ? Object.keys(objectSchema.keyof().enum)
         .map(name => ({
@@ -94,11 +93,12 @@ const replies: Record<Status, number> = {
 export function routeToOpenApiOperation(route: Route): Operation {
   const path = objectSchemaToParameters(route.schemas.params, 'path')
   const query = objectSchemaToParameters(route.schemas.query, 'query')
+  const compatibilityDate: Parameter | undefined = route.compatibilityDate ? { name: 'x-compatibility-date', in: 'header', description: '', required: true, schema: convertSchema(z.literal(route.compatibilityDate)) } : undefined
 
-  const parameters = [ ...(path ?? []), ...(query ?? []) ]
+  const parameters = [ ...(path ?? []), ...(query ?? []), ...(compatibilityDate ? [compatibilityDate] : []) ]
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { $schema = undefined, ...bodySchema } = route.schemas.body ? convertSchema(route.schemas.body) : {}
+  const bodySchema = route.schemas.body ? convertSchema(route.schemas.body) : {}
   const requestBody = bodySchema ? {
     content: Object.fromEntries(Object.entries(bodySchema)
       .filter(entry => entry[1] !== undefined)) as { [key: string]: object },

@@ -78,6 +78,11 @@ export const mainCommand = defineCommand({
       process.exit(1)
     }
 
+    if (args.date === 'today'){
+      const date = new Date()
+      args.date = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+    }
+
     if (args.access !== 'public' && args.access !== 'private' && args.access !== 'all') {
       console.error('Invalid access argument! "public", "private" or "all" required.')
 
@@ -86,7 +91,12 @@ export const mainCommand = defineCommand({
 
     await generate(args, data)
 
-    // const result = await OpenAPIParser.validate(args.output)
+    try {
+      const result = await OpenAPIParser.validate(args.output)
+      console.log("OpenAPI schema is valid:", result)
+    } catch (error){
+      console.error("Error validating OpenAPI schema:", error)
+    }
   }
 })
 

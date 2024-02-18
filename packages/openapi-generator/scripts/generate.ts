@@ -34,6 +34,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     entryPoints: [ args.input ],
     bundle: true,
     external: [ 'node:*', 'cloudflare:*' ],
+    conditions: ["worker", "worker", "browser"],
     legalComments: 'inline',
     outfile: tmpFilename,
     format: 'esm',
@@ -64,7 +65,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
   try {
     const script = (await readFile(tmpFilename, { encoding: 'utf8' }))
-      .replace(/\b(\w+) as default(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')
+      .replace(/\b(\w+) as default(?!\.)(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')
       .replaceAll(/import\s*{\s*EmailMessage\s*}\s*from\s*["']cloudflare:email["']/g, 'const EmailMessage = class EmailMessage {}')
 
     const wrapFetch = (await readFile(join(dirname(fileURLToPath(import.meta.url)), 'wrapFetch.js'), { encoding: 'utf8' }))
@@ -93,7 +94,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     await worker.stop()
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
-    attachComments(code, paths, args.access)
+    attachComments(code, paths, args.access, args.date)
 
     const output = defu({ openapi: '3.1.0' }, data, { paths })
     await writeFile(args.output, JSON.stringify(output, null, 2))
