@@ -78,9 +78,9 @@ export const mainCommand = defineCommand({
       process.exit(1)
     }
 
-    if (args.date === 'today'){
+    if (args.date === 'today') {
       const date = new Date()
-      args.date = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+      args.date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
     }
 
     if (args.access !== 'public' && args.access !== 'private' && args.access !== 'all') {
@@ -93,9 +93,9 @@ export const mainCommand = defineCommand({
 
     try {
       const result = await OpenAPIParser.validate(args.output)
-      console.log("OpenAPI schema is valid:", result)
-    } catch (error){
-      console.error("Error validating OpenAPI schema:", error)
+      console.log('OpenAPI schema is valid:', result)
+    } catch (error) {
+      console.error('Error validating OpenAPI schema:', error)
     }
   }
 })

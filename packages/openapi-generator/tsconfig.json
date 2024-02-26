@@ -2,9 +2,12 @@
   "extends": "some-tsconfig-preset/node",
   "include": [
     "scripts/**/*",
-    "*.d.ts"
+    "*.ts"
   ],
   "compilerOptions": {
-    "types": [ "node", "@types/babel__traverse" ]
+    "types": [
+      "node",
+      "@types/babel__traverse"
+    ]
   }
 }

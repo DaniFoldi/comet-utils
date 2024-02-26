@@ -15,8 +15,10 @@ export function wrapFetch(originalFetch: FetchHandler): { fetch: FetchHandler } 
         const routes = router.getRoutes()
 
         const paths = buildPaths(routes, searchParams.get('date') ?? '')
+
         return Response.json(paths)
       }
+
       return originalFetch(request)
     }
   }

@@ -1,8 +1,7 @@
-import { Method } from '@neoaren/comet'
+import { Method, type Route } from '@neoaren/comet'
 import { methods } from './methods'
 import { routeToOpenApiOperation } from './operation'
 import type { Paths } from '../types'
-import type { Route } from '@neoaren/comet'
 
 
 function compareDatesBeforeToday(
@@ -23,6 +22,7 @@ function compareDatesBeforeToday(
   if (date1 !== undefined) {
     date1 = date1 > today ? undefined : date1
   }
+
   if (date2 !== undefined) {
     date2 = date2 > today ? undefined : date2
   }
@@ -32,6 +32,7 @@ function compareDatesBeforeToday(
   } else if (date1 === undefined || date2 === undefined) {
     return date1 === undefined ? date2 : date1
   }
+
   return date1 > date2 ? date1 : date2
 }
 
@@ -45,6 +46,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
     groups[thisRoute.pathname] = groups[thisRoute.pathname] ?? {}
     groups[thisRoute.pathname]![thisRoute.method] = groups[thisRoute.pathname]![thisRoute.method] ?? []
     groups[thisRoute.pathname]![thisRoute.method]!.push(thisRoute)
+
     return groups
   }, {} as Record<string, Record<string, Route[]>>)
 
@@ -56,6 +58,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
     for (const method of Object.values(routeMethods)) {
       if (method.length > 1) { // routes with multiple dates
         let correctMethod: Route | null = null
+
         for (const object of method) {
           if (correctMethod === null) {
             correctMethod = object
@@ -65,9 +68,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
               object.compatibilityDate,
               targetDate
             )
-            if (!comparedDate) {
-
-            }else{
+            if (!comparedDate) {} else {
               const objectCompatibilityDate = new Date(object.compatibilityDate as string)
               if (comparedDate.getTime() === objectCompatibilityDate.getTime()) {
                 correctMethod = object
@@ -75,6 +76,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
             }
           }
         }
+
         if (correctMethod) {
           foundRoutes.push(correctMethod)
         }
@@ -85,13 +87,14 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
         }
       }
     }
+
     ungroupedRoutes[pathname] = foundRoutes
   })
 
   return Object.fromEntries(Object.entries(ungroupedRoutes).map(([ pathname, cometRoutes ]) => {
     return [
       (pathname.startsWith('/') ? pathname : `/${pathname}`) as `/${string}`,
-      Object.fromEntries(cometRoutes.map(route => ([ route.method.toLowerCase(), routeToOpenApiOperation(route) ])))
+      Object.fromEntries(cometRoutes.map(route => [ route.method.toLowerCase(), routeToOpenApiOperation(route) ]))
     ]
   }))
 }

@@ -8,8 +8,8 @@ type JSDocParameters = {
   access: string
   description: string
   summary: string
-  tags: string[],
-  reply: Record<string, { description: string, headers: string[] }>
+  tags: string[]
+  reply: Record<string, { description: string; headers: string[] }>
 }
 
 export function attachComments(code: string, paths: Paths, access: string, date: string) {
@@ -37,7 +37,7 @@ export function attachComments(code: string, paths: Paths, access: string, date:
 
       const methodToCompare = method.toUpperCase()
 
-      //let dateToCompare: string = date
+      // let dateToCompare: string = date
       // TODO
 
       // @ts-expect-error This babel traverse types are wrong
@@ -48,24 +48,24 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             return
           }
 
-          if (path.node.type === 'ExpressionStatement'){
+          if (path.node.type === 'ExpressionStatement') {
             if (path.node.expression.type !== 'CallExpression') {
               return
             }
-  
+
             const params = path.node.expression.arguments[0]
             if (!params || params.type !== 'ObjectExpression') {
               return
             }
-  
+
             const propertiesArray = params.properties.filter((property: any) => property.type === 'ObjectProperty') as ObjectProperty[]
-  
-            //const compatibilityDateValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'compatibilityDate')?.value
+
+            // const compatibilityDateValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'compatibilityDate')?.value
             const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
             const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
-            //const commentDate = compatibilityDateValue?.type === 'StringLiteral' ? compatibilityDateValue.value : ''
+            // const commentDate = compatibilityDateValue?.type === 'StringLiteral' ? compatibilityDateValue.value : ''
             const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
-  
+
             if (commentMethod !== methodToCompare) {
               return
             }
@@ -74,17 +74,18 @@ export function attachComments(code: string, paths: Paths, access: string, date:
               return
             }
             */
-  
+
             if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
               return
             }
-  
+
             const doc = parseComment(path.node.leadingComments.map((comment: any) => comment.value).join('\n'))
             operation.description = doc.description
             operation.summary = doc.summary
             operation.tags = doc.tags
+
             const replyKey = Object.keys(doc.reply)[0] as string
-            operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as { } } }
+            operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
             // @ts-expect-error This could be typed, but it's fine :tm:
             operation.access = doc.access
           }
@@ -149,7 +150,10 @@ function parseComment(comments: string): JSDocParameters {
         break
       case 'reply':
         const info = rest.join(' ').split('-').map(el => el.trim())
-        if (info.length < 2 ) { break }
+        if (info.length < 2) {
+          break
+        }
+
         commentsByType.reply[info[0] as string] = { description: info[1] as string, headers: info[2] ? info[2].split(',').map(el => el.trim()) : [] }
         break
       default:
@@ -159,5 +163,3 @@ function parseComment(comments: string): JSDocParameters {
 
   return commentsByType
 }
-
-

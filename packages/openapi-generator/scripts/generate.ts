@@ -34,7 +34,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     entryPoints: [ args.input ],
     bundle: true,
     external: [ 'node:*', 'cloudflare:*' ],
-    conditions: ["workerd", "worker", "browser"],
+    conditions: [ 'workerd', 'worker', 'browser' ],
     legalComments: 'inline',
     outfile: tmpFilename,
     format: 'esm',

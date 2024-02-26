@@ -1,14 +1,15 @@
-import { Status } from '@neoaren/comet'
+import { Status, type Route } from '@neoaren/comet'
 import { convertSchema } from './schema'
 import type { Operation, Parameter, Responses } from '../types'
-import type { Route } from '@neoaren/comet'
 import { type ZodAny, type ZodOptional, type SomeZodObject, type ZodType, type ZodTypeAny, z } from 'zod'
 
 
 function objectSchemaToParameters(schema: ZodType | undefined, where: Parameter['in']): Array<Parameter> | undefined {
   if (!schema) return undefined
+
   try {
     const objectSchema = schema as SomeZodObject
+
     return where === 'path'
       ? Object.keys(objectSchema.keyof().enum)
         .map(name => ({
@@ -95,9 +96,9 @@ export function routeToOpenApiOperation(route: Route): Operation {
   const query = objectSchemaToParameters(route.schemas.query, 'query')
   const compatibilityDate: Parameter | undefined = route.compatibilityDate ? { name: 'x-compatibility-date', in: 'header', description: '', required: true, schema: convertSchema(z.literal(route.compatibilityDate)) } : undefined
 
-  const parameters = [ ...(path ?? []), ...(query ?? []), ...(compatibilityDate ? [compatibilityDate] : []) ]
+  const parameters = [ ...path ?? [], ...query ?? [], ...compatibilityDate ? [ compatibilityDate ] : [] ]
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const bodySchema = route.schemas.body ? convertSchema(route.schemas.body) : {}
   const requestBody = bodySchema ? {
     content: Object.fromEntries(Object.entries(bodySchema)
@@ -110,8 +111,8 @@ export function routeToOpenApiOperation(route: Route): Operation {
     : undefined
 
   return {
-    ...(parameters ? { parameters } : {}),
-    ...(requestBody ? { requestBody } : {}),
-    ...(responses ? { responses } : {})
+    ...parameters ? { parameters } : {},
+    ...requestBody ? { requestBody } : {},
+    ...responses ? { responses } : {}
   }
 }
