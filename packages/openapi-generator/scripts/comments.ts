@@ -131,10 +131,10 @@ function parseComment(comments: string): JSDocParameters {
 
     switch (head) {
       case 'description':
-        commentsByType.description = [ commentsByType.description || undefined, rest.join(' ').trim() ].join('\n')
+        commentsByType.description = [ ...commentsByType.description ? commentsByType.description : [], rest.join(' ').trim() ].join('\n')
         break
       case 'summary':
-        commentsByType.summary += [ commentsByType.summary || undefined, rest.join(' ').trim() ].join('\n')
+        commentsByType.summary += [ ...commentsByType.summary ? commentsByType.summary : [] || undefined, rest.join(' ').trim() ].join('\n')
         break
       case 'tag':
         commentsByType.tags.push(rest.join(' ').trim())
