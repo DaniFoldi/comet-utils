@@ -15,7 +15,7 @@ type JSDocParameters = {
 }
 
 type MiddlewareParameters<T = any> = {
-  requestHeaders: (string | { name: string } & T)[],
+  requestHeaders: (string | { name: string, schema: Object })[],
   responses: Record<string, { name: string } & T>
 }
 
@@ -85,11 +85,23 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             operation.tags = doc.tags
 
             const replyKey = Object.keys(doc.reply)[0] as string
-            operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
+            if (replyKey) {
+              operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
+            }
             commonMWs.map(mw => {
               Object.entries(mw.params.responses).map(([key, value]) => {
                 if (!(key in operation.responses)){
                   operation.responses[key] = value
+                }
+              })
+
+              mw.params.requestHeaders.map(header => {
+                if (typeof header === 'string'){
+                  operation.parameters?.push({ name: header, in: 'header', required: true })
+                } else if (Object.keys(header.schema).length === 0) {
+                  operation.parameters?.push({ name: header.name, in: 'header', required: true })
+                } else {
+                  operation.parameters?.push({ name: header.name, in: 'header', required: true, schema: header.schema })
                 }
               })
             })
@@ -225,39 +237,37 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
 
   for (const comment of commentArray) {
     const [ head, ...rest ] = comment.split(' ')
-    let valueParam = []
 
     switch (head) {
-      case 'request':
-        commentsByType.requestHeaders.push(rest.length > 1 ? { name: rest[0] as string, type: rest[1] as string } : rest.join(' ').trim())
-        break
-
       case 'requestHeader':
-        commentsByType.requestHeaders.push(rest.length > 1 ? { name: rest[0] as string, type: rest[1] as string } : rest.join(' ').trim())
-        break
-
-      case 'response':
-        if (rest.length < 3) {
+        if (rest.length === 0) {
           break
         }
-        valueParam = rest.slice(2).join(' ').slice(1,-1).split(': ')
-        if (valueParam.length < 2){
-          commentsByType.responses[rest[0] as string] = { name: rest[1] }
+        if (rest.length < 2) {
+          commentsByType.requestHeaders.push(rest[0] as string )
+        }
+        let schemaValue = {}
+        try {
+          schemaValue = JSON.parse(rest.slice(1).join(' ')) as Object
+        } catch (error) {
+          console.error('Error parsing JSON: ', error)
           break
         }
-        commentsByType.responses[rest[0] as string] = { name: rest[1] as string, [valueParam[0]?.slice(1,-1) as string] : valueParam[1]?.slice(1,-1) }
+        commentsByType.requestHeaders.push({ name: rest[0] as string, schema: schemaValue })
         break
 
       case 'responseHeader':
         if (rest.length < 3) {
           break
         }
-        valueParam = rest.slice(2).join(' ').slice(1,-1).split(': ')
-        if (valueParam.length < 2){
-          commentsByType.responses[rest[0] as string] = { name: rest[1] }
+        let headerIn = {}
+        try {
+          headerIn = JSON.parse(rest.slice(2).join(' ')) as Object
+        } catch (error) {
+          console.error('Error parsing JSON: ', error)
           break
         }
-        commentsByType.responses[rest[0] as string] = { name: rest[1] as string, [valueParam[0]?.slice(1,-1) as string] : valueParam[1]?.slice(1,-1)  }
+        commentsByType.responses[rest[0] as string] = { name: rest[1] as string, ...headerIn }
         break
 
       default:
