@@ -5,6 +5,7 @@ import { defu } from 'defu'
 import { build } from 'esbuild'
 import { unstable_dev } from 'wrangler'
 import { attachComments } from './comments'
+import { collectMiddlewares } from './middlewares'
 import { randomName } from './random'
 import temporaryDirectory from 'temp-dir'
 import type { mainCommand } from './index'
@@ -94,7 +95,8 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     await worker.stop()
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
-    attachComments(code, paths, args.access, args.date)
+    const middlewares = collectMiddlewares(code)
+    attachComments(code, paths, args.access, args.date, middlewares)
 
     const output = defu({ openapi: '3.1.0' }, data, { paths })
     await writeFile(args.output, JSON.stringify(output, null, 2))

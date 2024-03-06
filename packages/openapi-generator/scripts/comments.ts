@@ -2,6 +2,8 @@ import { parse } from '@babel/parser'
 import babelTraverse from '@babel/traverse'
 import type { Paths } from './types'
 import type { ObjectProperty } from '@babel/types'
+import { NodePath } from '@babel/traverse'
+import * as t from '@babel/types'
 
 
 type JSDocParameters = {
@@ -12,7 +14,12 @@ type JSDocParameters = {
   reply: Record<string, { description: string; headers: string[] }>
 }
 
-export function attachComments(code: string, paths: Paths, access: string, date: string) {
+type MiddlewareParameters<T = any> = {
+  requestHeaders: (string | { name: string } & T)[],
+  responses: Record<string, { name: string } & T>
+}
+
+export function attachComments(code: string, paths: Paths, access: string, date: string, middlewares: { name: string, params:  MiddlewareParameters<any> }[]) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
     console.error(astree.errors)
@@ -37,9 +44,6 @@ export function attachComments(code: string, paths: Paths, access: string, date:
 
       const methodToCompare = method.toUpperCase()
 
-      // let dateToCompare: string = date
-      // TODO
-
       // @ts-expect-error This babel traverse types are wrong
       babelTraverse.default(astree, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,25 +64,21 @@ export function attachComments(code: string, paths: Paths, access: string, date:
 
             const propertiesArray = params.properties.filter((property: any) => property.type === 'ObjectProperty') as ObjectProperty[]
 
-            // const compatibilityDateValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'compatibilityDate')?.value
+            const beforeValue = propertiesArray.find((property) => property.key.type === "Identifier" && property.key.name === "before")?.value;
+            const beforeNames = code.slice(beforeValue?.start ?? 0, beforeValue?.end ?? 0).match(/\b(\w+)(?=\()/g)
             const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
             const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
-            // const commentDate = compatibilityDateValue?.type === 'StringLiteral' ? compatibilityDateValue.value : ''
             const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
 
             if (commentMethod !== methodToCompare) {
               return
             }
-            /*
-            if (commentDate !== dateToCompare) {
-              return
-            }
-            */
 
             if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
               return
             }
 
+            const commonMWs = middlewares.length > 0 && beforeNames !== null ? middlewares.filter(element => beforeNames.includes(element.name)) : []
             const doc = parseComment(path.node.leadingComments.map((comment: any) => comment.value).join('\n'))
             operation.description = doc.description
             operation.summary = doc.summary
@@ -86,6 +86,13 @@ export function attachComments(code: string, paths: Paths, access: string, date:
 
             const replyKey = Object.keys(doc.reply)[0] as string
             operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
+            commonMWs.map(mw => {
+              Object.entries(mw.params.responses).map(([key, value]) => {
+                if (!(key in operation.responses)){
+                  operation.responses[key] = value
+                }
+              })
+            })
             // @ts-expect-error This could be typed, but it's fine :tm:
             operation.access = doc.access
           }
@@ -112,6 +119,48 @@ export function attachComments(code: string, paths: Paths, access: string, date:
   }
 }
 
+export function collectMiddlewares(code: string): { name: string, params:  MiddlewareParameters<any> }[] {
+  const middlewares: { name: string, params:  MiddlewareParameters<any> }[] = []
+  const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
+  if (astree.errors.length > 0) {
+    console.error(astree.errors)
+    return middlewares
+  }
+
+  const commentsByLine = new Map();
+
+  babelTraverse.default(astree, {
+    enter(path: any) {
+      if (path.node.leadingComments) {
+        const line = path.node.loc.start.line;
+        commentsByLine.set(line, path.node.leadingComments.map(comment => comment.value));
+      }
+    }
+  });
+
+  babelTraverse.default(astree, {
+    CallExpression(path: any) {
+      if (path.node.callee.type === 'Identifier' && path.node.callee?.name === 'middleware') {
+        let middlewareName = '';
+        const variableDeclaration = path.findParent((parent: NodePath<t.VariableDeclarator>) => parent.isVariableDeclarator());
+        if (!variableDeclaration) {
+          return;
+        }
+        middlewareName = variableDeclaration.node.id?.name;
+
+        const line = path.node.loc.start.line;
+        const comments = commentsByLine.get(line);
+        if (!comments) {
+          return;
+        }
+        const doc = parseMiddlewareComment(comments.map((comment: string) => comment).join("\n"));
+        middlewares.push({ name: middlewareName, params: doc })
+      }
+    }
+  });
+
+  return middlewares
+}
 
 function parseComment(comments: string): JSDocParameters {
   const commentArray = comments.split('* @').slice(1).map(comment => {
@@ -158,6 +207,61 @@ function parseComment(comments: string): JSDocParameters {
         break
       default:
         console.warn('Unknown comment type:', head)
+    }
+  }
+
+  return commentsByType
+}
+
+function parseMiddlewareComment(comments: string): MiddlewareParameters {
+  const commentArray = comments.split('* @').slice(1).map(comment => {
+    return comment.slice(0, -2)
+  })
+
+  const commentsByType: MiddlewareParameters = {
+    requestHeaders: [],
+    responses: {}
+  }
+
+  for (const comment of commentArray) {
+    const [ head, ...rest ] = comment.split(' ')
+    let valueParam = []
+
+    switch (head) {
+      case 'request':
+        commentsByType.requestHeaders.push(rest.length > 1 ? { name: rest[0] as string, type: rest[1] as string } : rest.join(' ').trim())
+        break
+
+      case 'requestHeader':
+        commentsByType.requestHeaders.push(rest.length > 1 ? { name: rest[0] as string, type: rest[1] as string } : rest.join(' ').trim())
+        break
+
+      case 'response':
+        if (rest.length < 3) {
+          break
+        }
+        valueParam = rest.slice(2).join(' ').slice(1,-1).split(': ')
+        if (valueParam.length < 2){
+          commentsByType.responses[rest[0] as string] = { name: rest[1] }
+          break
+        }
+        commentsByType.responses[rest[0] as string] = { name: rest[1] as string, [valueParam[0]?.slice(1,-1) as string] : valueParam[1]?.slice(1,-1) }
+        break
+
+      case 'responseHeader':
+        if (rest.length < 3) {
+          break
+        }
+        valueParam = rest.slice(2).join(' ').slice(1,-1).split(': ')
+        if (valueParam.length < 2){
+          commentsByType.responses[rest[0] as string] = { name: rest[1] }
+          break
+        }
+        commentsByType.responses[rest[0] as string] = { name: rest[1] as string, [valueParam[0]?.slice(1,-1) as string] : valueParam[1]?.slice(1,-1)  }
+        break
+
+      default:
+        console.warn('Unknown comment type for middleware:', head)
     }
   }
 
