@@ -1,6 +1,6 @@
 import { Status, type Route } from '@neoaren/comet'
 import { convertSchema } from './schema'
-import type { Operation, Parameter, Responses } from '../types'
+import type { Operation, Parameter } from '../types'
 import { type ZodAny, type ZodOptional, type SomeZodObject, type ZodType, type ZodTypeAny, z } from 'zod'
 
 
@@ -116,7 +116,7 @@ export function routeToOpenApiOperation(route: Route): Operation {
           content: {
             'application/json': {
               schema:
-              convertSchema(reply[1])
+                convertSchema(reply[1])
             }
           }
         }

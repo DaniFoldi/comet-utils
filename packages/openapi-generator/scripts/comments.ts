@@ -18,7 +18,13 @@ type MiddlewareParameters<T = unknown> = {
   responses: Record<string, { name: string } & T>
 }
 
-export function attachComments(code: string, paths: Paths, access: string, date: string, middlewares: { name: string; params: MiddlewareParameters<any> }[]) {
+export function attachComments(
+  code: string,
+  paths: Paths,
+  access: string,
+  date: string,
+  middlewares: { name: string; params: MiddlewareParameters }[]
+) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
     console.error(astree.errors)
@@ -76,7 +82,9 @@ export function attachComments(code: string, paths: Paths, access: string, date:
               return
             }
 
-            const commonMWs = middlewares.length > 0 && beforeNames !== null ? middlewares.filter(element => beforeNames.includes(element.name)) : []
+            const commonMWs = middlewares.length > 0 && beforeNames !== null
+              ? middlewares.filter(element => beforeNames.includes(element.name))
+              : []
             const doc = parseComment(path.node.leadingComments.map(comment => comment.value).join('\n'))
             operation.description = doc.description
             operation.summary = doc.summary
@@ -85,9 +93,16 @@ export function attachComments(code: string, paths: Paths, access: string, date:
               operation.deprecated = true
             }
 
-            const replyKey = Object.keys(doc.reply)[0] as string
+            const replyKey = Object.keys(doc.reply)[0]
             if (replyKey) {
-              operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
+              // TODO headers as headers object
+              const description = doc.reply[replyKey]?.description
+              if (!(replyKey in operation.responses)) {
+                // @ts-expect-error stfu
+                operation.responses[replyKey] = {}
+              }
+
+              operation.responses[replyKey]!.description = description
             }
 
             commonMWs.map(mw => {
@@ -218,8 +233,8 @@ function parseComment(comments: string): JSDocParameters {
       case 'deprecated':
         commentsByType.deprecated = true
         break
-      case 'reply':
-        const [status, ...details] = rest
+      case 'reply': {
+        const [ status, ...details ] = rest
         if (!status) {
           break
         }
@@ -229,8 +244,10 @@ function parseComment(comments: string): JSDocParameters {
           break
         }
 
-        commentsByType.reply[status] = { description: info[0], ...info[1] ? { headers: info[1].split(",").map((el) => el.trim()) } : {} }
+        commentsByType.reply[status] = { description: info[0], ...info[1] ? { headers: info[1].split(',').map(el => el.trim()) } : {} }
         break
+      }
+
       default:
         console.warn('Unknown comment type:', head)
     }
@@ -250,10 +267,10 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
   }
 
   for (const comment of commentArray) {
-    const [head, ...rest] = comment.split(' ')
+    const [ head, ...rest ] = comment.split(' ')
 
     switch (head) {
-      case 'requestHeader':
+      case 'requestHeader': {
         if (rest.length === 0) {
           break
         }
@@ -273,8 +290,9 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
 
         commentsByType.requestHeaders.push({ name: rest[0] as string, schema: schemaValue })
         break
+      }
 
-      case 'responseHeader':
+      case 'responseHeader': {
         if (rest.length < 3) {
           break
         }
@@ -290,6 +308,7 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
 
         commentsByType.responses[rest[0] as string] = { name: rest[1] as string, ...headerIn }
         break
+      }
 
       default:
         console.warn('Unknown comment type for middleware:', head)
