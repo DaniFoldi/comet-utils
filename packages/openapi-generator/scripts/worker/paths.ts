@@ -68,7 +68,7 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
               object.compatibilityDate,
               targetDate
             )
-            if (!comparedDate) {} else {
+            if (comparedDate) {
               const objectCompatibilityDate = new Date(object.compatibilityDate as string)
               if (comparedDate.getTime() === objectCompatibilityDate.getTime()) {
                 correctMethod = object

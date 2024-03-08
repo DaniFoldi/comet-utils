@@ -1,9 +1,7 @@
 import { parse } from '@babel/parser'
-import babelTraverse from '@babel/traverse'
+import babelTraverse, { NodePath } from '@babel/traverse'
 import type { Paths } from './types'
-import type { ObjectProperty } from '@babel/types'
-import { NodePath } from '@babel/traverse'
-import * as t from '@babel/types'
+import type { CallExpression, ObjectProperty } from '@babel/types'
 
 
 type JSDocParameters = {
@@ -14,12 +12,12 @@ type JSDocParameters = {
   reply: Record<string, { description: string; headers: string[] }>
 }
 
-type MiddlewareParameters<T = any> = {
-  requestHeaders: (string | { name: string, schema: Object })[],
+type MiddlewareParameters<T = unknown> = {
+  requestHeaders: (string | { name: string; schema: object })[]
   responses: Record<string, { name: string } & T>
 }
 
-export function attachComments(code: string, paths: Paths, access: string, date: string, middlewares: { name: string, params:  MiddlewareParameters<any> }[]) {
+export function attachComments(code: string, paths: Paths, access: string, date: string, middlewares: { name: string; params: MiddlewareParameters<any> }[]) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
     console.error(astree.errors)
@@ -27,12 +25,12 @@ export function attachComments(code: string, paths: Paths, access: string, date:
     return
   }
 
-  for (const [ key, value ] of Object.entries(paths)) {
+  for (const [key, value] of Object.entries(paths)) {
     if (!value) {
       continue
     }
 
-    for (const [ method, operation ] of Object.entries(value)) {
+    for (const [method, operation] of Object.entries(value)) {
       if (typeof operation === 'string' || Array.isArray(operation) || 'url' in operation) {
         continue
       }
@@ -46,8 +44,7 @@ export function attachComments(code: string, paths: Paths, access: string, date:
 
       // @ts-expect-error This babel traverse types are wrong
       babelTraverse.default(astree, {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        enter(path: any) {
+        enter(path: NodePath) {
           if (!path.node.leadingComments) {
             return
           }
@@ -62,9 +59,9 @@ export function attachComments(code: string, paths: Paths, access: string, date:
               return
             }
 
-            const propertiesArray = params.properties.filter((property: any) => property.type === 'ObjectProperty') as ObjectProperty[]
+            const propertiesArray = params.properties.filter(property => property.type === 'ObjectProperty') as ObjectProperty[]
 
-            const beforeValue = propertiesArray.find((property) => property.key.type === "Identifier" && property.key.name === "before")?.value;
+            const beforeValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'before')?.value
             const beforeNames = code.slice(beforeValue?.start ?? 0, beforeValue?.end ?? 0).match(/\b(\w+)(?=\()/g)
             const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
             const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
@@ -79,7 +76,7 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             }
 
             const commonMWs = middlewares.length > 0 && beforeNames !== null ? middlewares.filter(element => beforeNames.includes(element.name)) : []
-            const doc = parseComment(path.node.leadingComments.map((comment: any) => comment.value).join('\n'))
+            const doc = parseComment(path.node.leadingComments.map(comment => comment.value).join('\n'))
             operation.description = doc.description
             operation.summary = doc.summary
             operation.tags = doc.tags
@@ -88,15 +85,16 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             if (replyKey) {
               operation.responses = { [replyKey]: { description: doc.reply[replyKey]?.description as string, headers: (doc.reply[replyKey]?.headers || []) as {} } }
             }
+
             commonMWs.map(mw => {
               Object.entries(mw.params.responses).map(([key, value]) => {
-                if (!(key in operation.responses)){
+                if (!(key in operation.responses)) {
                   operation.responses[key] = value
                 }
               })
 
               mw.params.requestHeaders.map(header => {
-                if (typeof header === 'string'){
+                if (typeof header === 'string') {
                   operation.parameters?.push({ name: header, in: 'header', required: true })
                 } else if (Object.keys(header.schema).length === 0) {
                   operation.parameters?.push({ name: header.name, in: 'header', required: true })
@@ -125,51 +123,55 @@ export function attachComments(code: string, paths: Paths, access: string, date:
       delete operation.access
     }
 
-    if (Object.keys(paths[key]).length === 0) {
+    if (Object.keys(paths[key] ?? {}).length === 0) {
       delete paths[key]
     }
   }
 }
 
-export function collectMiddlewares(code: string): { name: string, params:  MiddlewareParameters<any> }[] {
-  const middlewares: { name: string, params:  MiddlewareParameters<any> }[] = []
+export function collectMiddlewares(code: string): { name: string; params: MiddlewareParameters }[] {
+  const middlewares: { name: string; params: MiddlewareParameters }[] = []
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
     console.error(astree.errors)
+
     return middlewares
   }
 
-  const commentsByLine = new Map();
+  const commentsByLine = new Map()
 
+  // @ts-expect-error Babel types are broken
   babelTraverse.default(astree, {
-    enter(path: any) {
+    enter(path: NodePath) {
       if (path.node.leadingComments) {
-        const line = path.node.loc.start.line;
-        commentsByLine.set(line, path.node.leadingComments.map(comment => comment.value));
+        const line = path.node.loc?.start.line
+        commentsByLine.set(line, path.node.leadingComments.map(comment => comment.value))
       }
     }
-  });
-
+  })
+  // @ts-expect-error Babel types are broken
   babelTraverse.default(astree, {
-    CallExpression(path: any) {
+    CallExpression(path: NodePath<CallExpression>) {
       if (path.node.callee.type === 'Identifier' && path.node.callee?.name === 'middleware') {
-        let middlewareName = '';
-        const variableDeclaration = path.findParent((parent: NodePath<t.VariableDeclarator>) => parent.isVariableDeclarator());
+        let middlewareName = ''
+        const variableDeclaration = path.findParent(parent => parent.isVariableDeclarator())
         if (!variableDeclaration) {
-          return;
+          return
         }
-        middlewareName = variableDeclaration.node.id?.name;
 
-        const line = path.node.loc.start.line;
-        const comments = commentsByLine.get(line);
+        middlewareName = variableDeclaration.node.id?.name
+
+        const line = path.node.loc?.start.line
+        const comments = commentsByLine.get(line)
         if (!comments) {
-          return;
+          return
         }
-        const doc = parseMiddlewareComment(comments.map((comment: string) => comment).join("\n"));
+
+        const doc = parseMiddlewareComment(comments.map((comment: string) => comment).join('\n'))
         middlewares.push({ name: middlewareName, params: doc })
       }
     }
-  });
+  })
 
   return middlewares
 }
@@ -188,14 +190,14 @@ function parseComment(comments: string): JSDocParameters {
   }
 
   for (const comment of commentArray) {
-    const [ head, ...rest ] = comment.split(' ')
+    const [head, ...rest] = comment.split(' ')
 
     switch (head) {
       case 'description':
-        commentsByType.description = [ ...commentsByType.description ? commentsByType.description : [], rest.join(' ').trim() ].join('\n')
+        commentsByType.description = [...commentsByType.description ?? [], rest.join(' ').trim()].join('\n')
         break
       case 'summary':
-        commentsByType.summary += [ ...commentsByType.summary ? commentsByType.summary : [] || undefined, rest.join(' ').trim() ].join('\n')
+        commentsByType.summary += [...commentsByType.summary ?? [], rest.join(' ').trim()].join('\n')
         break
       case 'tag':
         commentsByType.tags.push(rest.join(' ').trim())
@@ -236,23 +238,27 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
   }
 
   for (const comment of commentArray) {
-    const [ head, ...rest ] = comment.split(' ')
+    const [head, ...rest] = comment.split(' ')
 
     switch (head) {
       case 'requestHeader':
         if (rest.length === 0) {
           break
         }
+
         if (rest.length < 2) {
-          commentsByType.requestHeaders.push(rest[0] as string )
+          commentsByType.requestHeaders.push(rest[0] as string)
         }
+
         let schemaValue = {}
+
         try {
-          schemaValue = JSON.parse(rest.slice(1).join(' ')) as Object
+          schemaValue = JSON.parse(rest.slice(1).join(' ')) as object
         } catch (error) {
-          console.error('Error parsing JSON: ', error)
+          console.error('Error parsing JSON:', error)
           break
         }
+
         commentsByType.requestHeaders.push({ name: rest[0] as string, schema: schemaValue })
         break
 
@@ -260,13 +266,16 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
         if (rest.length < 3) {
           break
         }
+
         let headerIn = {}
+
         try {
-          headerIn = JSON.parse(rest.slice(2).join(' ')) as Object
+          headerIn = JSON.parse(rest.slice(2).join(' ')) as object
         } catch (error) {
-          console.error('Error parsing JSON: ', error)
+          console.error('Error parsing JSON:', error)
           break
         }
+
         commentsByType.responses[rest[0] as string] = { name: rest[1] as string, ...headerIn }
         break
 
