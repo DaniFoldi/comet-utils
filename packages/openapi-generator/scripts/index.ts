@@ -95,7 +95,11 @@ export const mainCommand = defineCommand({
       const result = await OpenAPIParser.validate(args.output)
       console.log('OpenAPI schema is valid:', result)
     } catch (error) {
-      console.error('Error validating OpenAPI schema:', error)
+      if (typeof error === 'object' && error !== null && 'details' in error) {
+        console.error('Error validating OpenAPI schema:', error.details)
+      } else {
+        console.error('Error validating OpenAPI schema:', error)
+      }
     }
   }
 })
