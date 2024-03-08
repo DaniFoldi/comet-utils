@@ -9,7 +9,8 @@ type JSDocParameters = {
   description: string
   summary: string
   tags: string[]
-  reply: Record<string, { description: string; headers: string[] }>
+  reply: Record<string, { description: string; headers?: string[] }>
+  deprecated?: true
 }
 
 type MiddlewareParameters<T = unknown> = {
@@ -80,6 +81,9 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             operation.description = doc.description
             operation.summary = doc.summary
             operation.tags = doc.tags
+            if (doc.deprecated) {
+              operation.deprecated = true
+            }
 
             const replyKey = Object.keys(doc.reply)[0] as string
             if (replyKey) {
@@ -211,13 +215,21 @@ function parseComment(comments: string): JSDocParameters {
       case 'public':
         commentsByType.access = 'public'
         break
+      case 'deprecated':
+        commentsByType.deprecated = true
+        break
       case 'reply':
-        const info = rest.join(' ').split('-').map(el => el.trim())
-        if (info.length < 2) {
+        const [status, ...details] = rest
+        if (!status) {
           break
         }
 
-        commentsByType.reply[info[0] as string] = { description: info[1] as string, headers: info[2] ? info[2].split(',').map(el => el.trim()) : [] }
+        const info = details.join(' ').split('-', 1).map(el => el.trim())
+        if (!info[0]) {
+          break
+        }
+
+        commentsByType.reply[status] = { description: info[0], ...info[1] ? { headers: info[1].split(",").map((el) => el.trim()) } : {} }
         break
       default:
         console.warn('Unknown comment type:', head)
@@ -238,7 +250,7 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
   }
 
   for (const comment of commentArray) {
-    const [ head, ...rest ] = comment.split(' ')
+    const [head, ...rest] = comment.split(' ')
 
     switch (head) {
       case 'requestHeader':
