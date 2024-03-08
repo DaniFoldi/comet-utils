@@ -101,13 +101,26 @@ export function routeToOpenApiOperation(route: Route): Operation {
 
   const bodySchema = route.schemas.body ? convertSchema(route.schemas.body) : {}
   const requestBody = bodySchema ? {
-    content: Object.fromEntries(Object.entries(bodySchema)
-      .filter(entry => entry[1] !== undefined)) as { [key: string]: object },
+    content: {
+      'application/json': {
+        schema: Object.fromEntries(Object.entries(bodySchema)
+          .filter(entry => entry[1] !== undefined))
+      }
+    } as { [key: string]: object },
     required: !route.schemas.body?.isOptional()
   } : undefined
   const responses = route.replies
     ? Object.fromEntries(Object.entries(route.replies).map(reply =>
-      [ replies[reply[0] as Status], convertSchema(reply[1]) ])) as Responses
+      [
+        replies[reply[0] as Status], {
+          content: {
+            'application/json': {
+              schema:
+              convertSchema(reply[1])
+            }
+          }
+        }
+      ]))
     : undefined
 
   return {

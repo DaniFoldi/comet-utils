@@ -25,12 +25,12 @@ export function attachComments(code: string, paths: Paths, access: string, date:
     return
   }
 
-  for (const [key, value] of Object.entries(paths)) {
+  for (const [ key, value ] of Object.entries(paths)) {
     if (!value) {
       continue
     }
 
-    for (const [method, operation] of Object.entries(value)) {
+    for (const [ method, operation ] of Object.entries(value)) {
       if (typeof operation === 'string' || Array.isArray(operation) || 'url' in operation) {
         continue
       }
@@ -87,7 +87,7 @@ export function attachComments(code: string, paths: Paths, access: string, date:
             }
 
             commonMWs.map(mw => {
-              Object.entries(mw.params.responses).map(([key, value]) => {
+              Object.entries(mw.params.responses).map(([ key, value ]) => {
                 if (!(key in operation.responses)) {
                   operation.responses[key] = value
                 }
@@ -190,14 +190,14 @@ function parseComment(comments: string): JSDocParameters {
   }
 
   for (const comment of commentArray) {
-    const [head, ...rest] = comment.split(' ')
+    const [ head, ...rest ] = comment.split(' ')
 
     switch (head) {
       case 'description':
-        commentsByType.description = [...commentsByType.description ?? [], rest.join(' ').trim()].join('\n')
+        commentsByType.description = [ ...commentsByType.description ?? [], rest.join(' ').trim() ].join('\n')
         break
       case 'summary':
-        commentsByType.summary += [...commentsByType.summary ?? [], rest.join(' ').trim()].join('\n')
+        commentsByType.summary += [ ...commentsByType.summary ?? [], rest.join(' ').trim() ].join('\n')
         break
       case 'tag':
         commentsByType.tags.push(rest.join(' ').trim())
@@ -238,7 +238,7 @@ function parseMiddlewareComment(comments: string): MiddlewareParameters {
   }
 
   for (const comment of commentArray) {
-    const [head, ...rest] = comment.split(' ')
+    const [ head, ...rest ] = comment.split(' ')
 
     switch (head) {
       case 'requestHeader':
