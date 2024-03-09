@@ -102,13 +102,16 @@ export function attachComments(
                 operation.responses[replyKey] = {}
               }
 
-              operation.responses[replyKey]!.description = description
+              operation.responses[replyKey]!.description = description ?? `${doc.summary} ${replyKey} response`
             }
 
             commonMWs.map(mw => {
               Object.entries(mw.params.responses).map(([ key, value ]) => {
                 if (!(key in operation.responses)) {
                   operation.responses[key] = value
+                  if (typeof operation.responses[key]?.description === 'undefined') {
+                    operation.responses[key]!.description = `${doc.summary} ${replyKey} response`
+                  }
                 }
               })
 
