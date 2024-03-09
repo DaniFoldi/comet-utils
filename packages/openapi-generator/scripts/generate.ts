@@ -95,7 +95,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
     const middlewares = collectMiddlewares(code)
-    attachComments(code, paths, args.access, args.date, middlewares)
+    attachComments(script, paths, args.access, args.date, middlewares)
 
     const output = defu({ openapi: '3.1.0' }, data, { paths })
     await writeFile(args.output, JSON.stringify(output, null, 2))
