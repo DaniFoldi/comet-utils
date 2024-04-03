@@ -141,6 +141,10 @@ export function attachComments(
         delete paths[key][method]
       }
 
+      for (const [status, response] of Object.entries(operation.responses)) {
+        response.description = response.description ?? `${operation.summary} ${status} response`
+      }
+
       // @ts-expect-error This could be typed, but it's fine :tm:
       delete operation.access
     }
@@ -248,6 +252,11 @@ function parseComment(comments: string): JSDocParameters {
         }
 
         commentsByType.reply[status] = { description: info[0], ...info[1] ? { headers: info[1].split(',').map(el => el.trim()) } : {} }
+        break
+      }
+
+      case 'note': {
+        // Note is for private notes to be excluded from the schema
         break
       }
 
