@@ -97,7 +97,11 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     const middlewares = collectMiddlewares(code)
     attachComments(script, paths, args.access, args.date, middlewares)
 
-    const output = defu({ openapi: '3.1.0' }, data, { paths })
+    const mappedPaths = Object.fromEntries(Object.entries(paths).map(([ path, value ]) => {
+      return [path.replaceAll(/(?<=\/):([^/]*)/gm, (_, group) => `{${group}}`), value]
+    }))
+
+    const output = defu({ openapi: '3.1.0' }, data, { paths: mappedPaths })
     await writeFile(args.output, JSON.stringify(output, null, 2))
   } catch (error) {
     console.error(error)
