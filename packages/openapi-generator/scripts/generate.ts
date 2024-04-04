@@ -1,4 +1,4 @@
-import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defu } from 'defu'
@@ -102,6 +102,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     }))
 
     const output = defu({ openapi: '3.1.0' }, data, { paths: mappedPaths })
+    await mkdir(dirname(args.output), { recursive: true })
     await writeFile(args.output, JSON.stringify(output, null, 2))
   } catch (error) {
     console.error(error)
