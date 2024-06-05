@@ -141,8 +141,10 @@ export function attachComments(
         delete paths[key][method]
       }
 
-      for (const [status, response] of Object.entries(operation.responses)) {
-        response.description = response.description ?? `${operation.summary} ${status} response`
+      if (operation.responses) {
+        for (const [status, response] of Object.entries(operation.responses)) {
+          response.description = response.description ?? `${operation.summary} ${status} response`
+        }
       }
 
       // @ts-expect-error This could be typed, but it's fine :tm:

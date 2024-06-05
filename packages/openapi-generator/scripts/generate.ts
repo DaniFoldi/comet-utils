@@ -59,6 +59,15 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
             }
           })
         }
+      },
+      {
+        name: "wasm-binary",
+        setup: (build) => {
+          build.onLoad({ filter: /.wasm$/ }, async (args) => ({
+            contents: await readFile(args.path),
+            loader: 'binary',
+          }))
+        }
       }
     ]
   })
