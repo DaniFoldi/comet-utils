@@ -3,7 +3,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defu } from 'defu'
 import { build } from 'esbuild'
-import { unstable_dev } from 'wrangler'
+import { unstable_startWorker } from 'wrangler'
 import { attachComments, collectMiddlewares } from './comments'
 import { randomName } from './random'
 import temporaryDirectory from 'temp-dir'
@@ -85,10 +85,10 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     await writeFile(tmpFilename, wrappedScript)
 
-    const worker = await unstable_dev(tmpFilename, {
-      experimental: {
-        disableExperimentalWarning: true
-      }
+    const worker = await unstable_startWorker({
+      entrypoint: tmpFilename,
+      compatibilityDate: '2024-08-01',
+      compatibilityFlags: [ 'nodejs_compat' ]
     })
 
     const response = await worker.fetch(`/__generate_openapi__?date=${args.date}`)
