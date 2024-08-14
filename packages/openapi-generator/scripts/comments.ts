@@ -109,7 +109,7 @@ export function attachComments(
               Object.entries(mw.params.responses).map(([ key, value ]) => {
                 if (!(key in operation.responses)) {
                   operation.responses[key] = value
-                  if (typeof operation.responses[key]?.description === 'undefined') {
+                  if (operation.responses[key]?.description === undefined) {
                     operation.responses[key]!.description = `${doc.summary} ${replyKey} response`
                   }
                 }
@@ -142,7 +142,7 @@ export function attachComments(
       }
 
       if (operation.responses) {
-        for (const [status, response] of Object.entries(operation.responses)) {
+        for (const [ status, response ] of Object.entries(operation.responses)) {
           response.description = response.description ?? `${operation.summary} ${status} response`
         }
       }
@@ -257,10 +257,10 @@ function parseComment(comments: string): JSDocParameters {
         break
       }
 
-      case 'note': {
+      case 'note':
         // Note is for private notes to be excluded from the schema
         break
-      }
+
 
       default:
         console.warn('Unknown comment type:', head)

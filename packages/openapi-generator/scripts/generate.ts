@@ -61,11 +61,11 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
         }
       },
       {
-        name: "wasm-binary",
-        setup: (build) => {
-          build.onLoad({ filter: /.wasm$/ }, async (args) => ({
+        name: 'wasm-binary',
+        setup: build => {
+          build.onLoad({ filter: /.wasm$/ }, async args => ({
             contents: await readFile(args.path),
-            loader: 'binary',
+            loader: 'binary'
           }))
         }
       }
@@ -107,7 +107,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     attachComments(script, paths, args.access, args.date, middlewares)
 
     const mappedPaths = Object.fromEntries(Object.entries(paths).map(([ path, value ]) => {
-      return [path.replaceAll(/(?<=\/):([^/]*)/gm, (_, group) => `{${group}}`), value]
+      return [ path.replaceAll(/(?<=\/):([^/]*)/gm, (_, group) => `{${group}}`), value ]
     }))
 
     const output = defu({ openapi: '3.1.0' }, data, { paths: mappedPaths })
