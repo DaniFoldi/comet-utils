@@ -1,4 +1,5 @@
 {
   "name": "comet-utils",
-  "private": true
+  "private": true,
+  "packageManager": "pnpm@9.7.0"
 }
