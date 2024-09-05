@@ -91,7 +91,9 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
       compatibilityFlags: [ 'nodejs_compat' ]
     })
 
-    const response = await worker.fetch(`/__generate_openapi__?date=${args.date}`)
+    await worker.ready
+
+    const response = await worker.fetch(`http://internal/__generate_openapi__?date=${args.date}`)
     if (response.headers.get('content-type') !== 'application/json') {
       console.debug(await response.text())
 
@@ -100,7 +102,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const paths = await response.json() as Paths
 
-    await worker.stop()
+    await worker.dispose()
 
     const code = await readFile(tmpFilename, { encoding: 'utf8' })
     const middlewares = collectMiddlewares(code)

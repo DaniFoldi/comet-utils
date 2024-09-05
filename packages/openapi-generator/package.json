@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.26",
+  "version": "0.2.27",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "pnpm run \"/^build:.*/\"",
