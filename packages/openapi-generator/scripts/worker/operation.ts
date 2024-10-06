@@ -118,7 +118,8 @@ export function routeToOpenApiOperation(route: Route): Operation {
               schema:
                 convertSchema(reply[1])
             }
-          }
+          },
+          description: `Response for status ${reply[0]}`
         }
       ]))
     : undefined
