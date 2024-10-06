@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser'
 import babelTraverse, { NodePath } from '@babel/traverse'
 import type { Paths } from './types'
-import type { CallExpression, ObjectProperty } from '@babel/types'
+import type { CallExpression, ExpressionStatement, Node, ObjectProperty } from '@babel/types'
 
 
 type JSDocParameters = {
@@ -32,6 +32,30 @@ export function attachComments(
     return
   }
 
+  const declarations: Array<NodePath<ExpressionStatement>> = []
+
+  // @ts-expect-error This babel traverse types are wrong
+  babelTraverse.default(astree, {
+    ExpressionStatement(path: NodePath<ExpressionStatement>) {
+      if (!path.node.leadingComments) {
+        return
+      }
+
+      if (path.node.type === 'ExpressionStatement') {
+        if (path.node.expression.type !== 'CallExpression') {
+          return
+        }
+
+        const params = path.node.expression.arguments[0]
+        if (!params || params.type !== 'ObjectExpression') {
+          return
+        }
+
+        declarations.push(path)
+      }
+    }
+  })
+
   for (const [ key, value ] of Object.entries(paths)) {
     if (!value) {
       continue
@@ -49,86 +73,82 @@ export function attachComments(
 
       const methodToCompare = method.toUpperCase()
 
-      // @ts-expect-error This babel traverse types are wrong
-      babelTraverse.default(astree, {
-        enter(path: NodePath) {
-          if (!path.node.leadingComments) {
-            return
-          }
-
-          if (path.node.type === 'ExpressionStatement') {
-            if (path.node.expression.type !== 'CallExpression') {
-              return
-            }
-
-            const params = path.node.expression.arguments[0]
-            if (!params || params.type !== 'ObjectExpression') {
-              return
-            }
-
-            const propertiesArray = params.properties.filter(property => property.type === 'ObjectProperty') as ObjectProperty[]
-
-            const beforeValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'before')?.value
-            const beforeNames = code.slice(beforeValue?.start ?? 0, beforeValue?.end ?? 0).match(/\b(\w+)(?=\()/g)
-            const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
-            const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
-            const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
-
-            if (commentMethod !== methodToCompare) {
-              return
-            }
-
-            if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
-              return
-            }
-
-            const commonMWs = middlewares.length > 0 && beforeNames !== null
-              ? middlewares.filter(element => beforeNames.includes(element.name))
-              : []
-            const doc = parseComment(path.node.leadingComments.map(comment => comment.value).join('\n'))
-            operation.description = doc.description
-            operation.summary = doc.summary
-            operation.tags = doc.tags
-            if (doc.deprecated) {
-              operation.deprecated = true
-            }
-
-            const replyKey = Object.keys(doc.reply)[0]
-            if (replyKey) {
-              // TODO headers as headers object
-              const description = doc.reply[replyKey]?.description
-              if (!(replyKey in operation.responses)) {
-                // @ts-expect-error stfu
-                operation.responses[replyKey] = {}
-              }
-
-              operation.responses[replyKey]!.description = description ?? `${doc.summary} ${replyKey} response`
-            }
-
-            commonMWs.map(mw => {
-              Object.entries(mw.params.responses).map(([ key, value ]) => {
-                if (!(key in operation.responses)) {
-                  operation.responses[key] = value
-                  if (operation.responses[key]?.description === undefined) {
-                    operation.responses[key]!.description = `${doc.summary} ${replyKey} response`
-                  }
-                }
-              })
-
-              mw.params.requestHeaders.map(header => {
-                if (typeof header === 'string') {
-                  operation.parameters?.push({ name: header, in: 'header', required: true })
-                } else if (Object.keys(header.schema).length === 0) {
-                  operation.parameters?.push({ name: header.name, in: 'header', required: true })
-                } else {
-                  operation.parameters?.push({ name: header.name, in: 'header', required: true, schema: header.schema })
-                }
-              })
-            })
-            // @ts-expect-error This could be typed, but it's fine :tm:
-            operation.access = doc.access
-          }
+      declarations.forEach(declaration => {
+        if (declaration.node.expression.type !== 'CallExpression') {
+          return
         }
+
+        const params = declaration.node.expression.arguments[0]
+        if (!params || params.type !== 'ObjectExpression') {
+          return
+        }
+
+        const propertiesArray = params.properties.filter(property => property.type === 'ObjectProperty') as ObjectProperty[]
+
+        const beforeValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'before')?.value
+        const beforeNames = code.slice(beforeValue?.start ?? 0, beforeValue?.end ?? 0).match(/\b(\w+)(?=\()/g)
+        const methodValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'method')?.value
+        const pathnameValue = propertiesArray.find(property => property.key.type === 'Identifier' && property.key.name === 'pathname')?.value
+        const commentMethod = code.slice(methodValue?.start ?? 0, methodValue?.end ?? 0).replaceAll('\'"', '').replace(/.*\./, '')
+
+        if (commentMethod !== methodToCompare) {
+          return
+        }
+
+        if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
+          return
+        }
+
+        const commonMWs = middlewares.length > 0 && beforeNames !== null
+          ? middlewares.filter(element => beforeNames.includes(element.name))
+          : []
+        if (!declaration.node.leadingComments) {
+          return
+        }
+
+        const doc = parseComment(declaration.node.leadingComments.map(comment => comment.value).join('\n'))
+        operation.description = doc.description
+        operation.summary = doc.summary
+        operation.tags = doc.tags
+        if (doc.deprecated) {
+          operation.deprecated = true
+        }
+
+        const replyKey = Object.keys(doc.reply)[0]
+        if (replyKey) {
+          // TODO headers as headers object
+          const description = doc.reply[replyKey]?.description
+          if (!(replyKey in operation.responses)) {
+            // @ts-expect-error stfu
+            operation.responses[replyKey] = {}
+          }
+
+          operation.responses[replyKey]!.description = description ?? `${doc.summary} ${replyKey} response`
+        }
+
+        commonMWs.map(mw => {
+          Object.entries(mw.params.responses).map(([ key, value ]) => {
+            if (!(key in operation.responses)) {
+              // @ts-expect-error something is wrong here, but it works
+              operation.responses[key] = value
+              if (operation.responses[key]?.description === undefined) {
+                operation.responses[key]!.description = `${doc.summary} ${replyKey} response`
+              }
+            }
+          })
+
+          mw.params.requestHeaders.map(header => {
+            if (typeof header === 'string') {
+              operation.parameters?.push({ name: header, in: 'header', required: true })
+            } else if (Object.keys(header.schema).length === 0) {
+              operation.parameters?.push({ name: header.name, in: 'header', required: true })
+            } else {
+              operation.parameters?.push({ name: header.name, in: 'header', required: true, schema: header.schema })
+            }
+          })
+        })
+        // @ts-expect-error This could be typed, but it's fine :tm:
+        operation.access = doc.access
       })
 
       if (!operation.description) {
@@ -170,7 +190,7 @@ export function collectMiddlewares(code: string): { name: string; params: Middle
 
   // @ts-expect-error Babel types are broken
   babelTraverse.default(astree, {
-    enter(path: NodePath) {
+    ExpressionStatement(path: NodePath<ExpressionStatement>) {
       if (path.node.leadingComments) {
         const line = path.node.loc?.start.line
         commentsByLine.set(line, path.node.leadingComments.map(comment => comment.value))
@@ -187,6 +207,7 @@ export function collectMiddlewares(code: string): { name: string; params: Middle
           return
         }
 
+        // @ts-expect-error Babel types are weird here
         middlewareName = variableDeclaration.node.id?.name
 
         const line = path.node.loc?.start.line
