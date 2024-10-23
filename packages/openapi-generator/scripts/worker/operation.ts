@@ -76,6 +76,7 @@ const replies: Record<Status, number> = {
   [Status.MisdirectedRequest]: 421,
   [Status.UnprocessableEntity]: 422,
   [Status.FailedDependency]: 424,
+  [Status.UpgradeRequired]: 426,
   [Status.PreconditionRequired]: 428,
   [Status.TooManyRequests]: 429,
   [Status.RequestHeaderFieldsTooLarge]: 431,

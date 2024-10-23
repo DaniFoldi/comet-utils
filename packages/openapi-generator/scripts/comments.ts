@@ -186,7 +186,7 @@ export function collectMiddlewares(code: string): { name: string; params: Middle
     return middlewares
   }
 
-  const commentsByLine = new Map()
+  const commentsByLine = new Map<number | undefined, string[]>()
 
   // @ts-expect-error Babel types are broken
   babelTraverse.default(astree, {
