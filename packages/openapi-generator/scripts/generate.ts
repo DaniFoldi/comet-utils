@@ -14,14 +14,16 @@ import type { CommandDef, ParsedArgs } from 'citty'
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
 
-async function textReplacements(text: string): Promise<string> {
+async function textReplacements(text: string, entries: string[] = ['worker']): Promise<string> {
   // replace /** with /*! to prevent removal of comments
   text = text.replaceAll('/**', '/*!')
 
-  // make the *server* variable global, so it can be used in the generated code
-  if (/import ?{.*?\bserver\b.*?} ?from ["']@neoaren\/comet["']/s.test(text) && !/durableObject["']?\s*:\s*true/.test(text)) {
-    const serverVariable = text.match(/(const|let) (\S+) ?= ?server\(/s)?.[2]
-    text = `${text}\nglobalThis.worker = ${serverVariable}`
+  for (const entry of entries) {
+    // make the *server* variable global, so it can be used in the generated code
+    if (/import ?{.*?\bserver\b.*?} ?from ["']@neoaren\/comet["']/s.test(text) && !/durableObject["']?\s*:\s*true/.test(text)) {
+      const serverVariable = text.match(/(const|let) (\S+) ?= ?server\(/s)?.[2]
+      text = `${text}\nglobalThis[${entry}] = ${serverVariable}`
+    }
   }
 
   return text
@@ -30,6 +32,7 @@ async function textReplacements(text: string): Promise<string> {
 export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data: object) {
   const dir = temporaryDirectory ?? process.cwd()
   const tmpFilename = `${dir}/tmp-${randomName()}.js`
+  const entrypoints = args.entry.split(',')
   await build({
     entryPoints: [ args.input ],
     bundle: true,
@@ -46,7 +49,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
             const text = await readFile(args.path, 'utf8')
 
             return {
-              contents: await textReplacements(text),
+              contents: await textReplacements(text, entrypoints),
               loader: 'ts'
             }
           })

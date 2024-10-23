@@ -10,7 +10,7 @@ export function wrapFetch(originalFetch: FetchHandler): { fetch: FetchHandler } 
       const { pathname, searchParams } = new URL(request.url)
       if (pathname === '/__generate_openapi__' && searchParams.has('date')) {
         // @ts-expect-error haha
-        const server: Server<never, never, never> = globalThis.worker
+        const server: Server<never, never, never> = globalThis[searchParams.get('entry') ?? 'worker']
         const router = Server.getRouter(server)
         const routes = router.getRoutes()
 

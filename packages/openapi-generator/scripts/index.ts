@@ -32,6 +32,10 @@ export const mainCommand = defineCommand({
     access: {
       type: 'string',
       default: 'public'
+    },
+    entry: {
+      type: 'string',
+      default: 'worker'
     }
   },
   async run({ args }) {
