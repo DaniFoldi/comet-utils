@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.30",
+  "version": "0.2.38",
   "description": "Openapi generator for comet",
   "scripts": {
     "build": "pnpm run \"/^build:.*/\"",
@@ -40,7 +40,7 @@
   "dependencies": {
     "@babel/parser": "^7.25.9",
     "@babel/traverse": "^7.25.9",
-    "@neoaren/comet": "^3.5.6",
+    "@neoaren/comet": "^3.5.7",
     "@readme/openapi-parser": "^2.6.0",
     "citty": "^0.1.6",
     "defu": "^6.1.4",
@@ -55,7 +55,7 @@
     "@total-typescript/ts-reset": "0.6.1",
     "@types/babel__traverse": "7.20.6",
     "@types/node": "22.7.8",
-    "bundled-eslint-config": "0.4.25",
+    "bundled-eslint-config": "0.4.26",
     "eslint": "9.13.0",
     "knip": "5.33.3",
     "openapi-types": "12.1.3",

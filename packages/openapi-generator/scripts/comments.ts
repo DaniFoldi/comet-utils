@@ -23,7 +23,8 @@ export function attachComments(
   paths: Paths,
   access: string,
   date: string,
-  middlewares: { name: string; params: MiddlewareParameters }[]
+  middlewares: { name: string; params: MiddlewareParameters }[],
+  prefix: string = ''
 ) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
   if (astree.errors.length > 0) {
@@ -95,7 +96,7 @@ export function attachComments(
           return
         }
 
-        if (pathnameValue?.type === 'StringLiteral' && pathnameValue.value !== key) {
+        if (pathnameValue?.type === 'StringLiteral' && prefix + pathnameValue.value !== key) {
           return
         }
 

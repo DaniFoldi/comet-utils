@@ -1,7 +1,8 @@
-import { Method, type Route } from '@neoaren/comet'
+import { Method, Server, type Route } from '@neoaren/comet'
 import { methods } from './methods'
 import { routeToOpenApiOperation } from './operation'
 import type { Paths } from '../types'
+import { nullToString } from './utils'
 
 
 function compareDatesBeforeToday(
@@ -36,16 +37,18 @@ function compareDatesBeforeToday(
   return date1 > date2 ? date1 : date2
 }
 
-export function buildPaths(routes: Route[], targetDate: string): Paths {
+export function buildPaths(server: Server<never, never, never>, routes: Route[], targetDate: string): Paths {
   const flattenedRoutes: Route[] = routes.flatMap(route => route.method === Method.ALL ? methods.map(method => ({
     ...route,
     method
   })) : [ route ])
 
   const groupedRoutes = flattenedRoutes.reduce((groups, thisRoute) => {
-    groups[thisRoute.pathname] = groups[thisRoute.pathname] ?? {}
-    groups[thisRoute.pathname]![thisRoute.method] = groups[thisRoute.pathname]![thisRoute.method] ?? []
-    groups[thisRoute.pathname]![thisRoute.method]!.push(thisRoute)
+    const path = nullToString(Server.getOptions(server).prefix) + thisRoute.pathname
+
+    groups[path] = groups[path] ?? {}
+    groups[path]![thisRoute.method] = groups[path]![thisRoute.method] ?? []
+    groups[path]![thisRoute.method]!.push(thisRoute)
 
     return groups
   }, {} as Record<string, Record<string, Route[]>>)
@@ -93,7 +96,10 @@ export function buildPaths(routes: Route[], targetDate: string): Paths {
 
   return Object.fromEntries(Object.entries(ungroupedRoutes).map(([ pathname, cometRoutes ]) => {
     return [
-      (pathname.startsWith('/') ? pathname : `/${pathname}`) as `/${string}`,
+      ((pathname.startsWith('/') ? pathname : `/${pathname}`) as `/${string}`)
+      // eslint-disable-next-line security/detect-non-literal-regexp
+        .replace(new RegExp(`^${nullToString(Server.getOptions(server).prefix)
+          .replaceAll(/[$()*+.?[\\\]^{|}]/g, '\\$&')}`), ''),
       Object.fromEntries(cometRoutes.map(route => [ route.method.toLowerCase(), routeToOpenApiOperation(route) ]))
     ]
   }))

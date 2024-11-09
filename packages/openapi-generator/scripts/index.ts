@@ -84,7 +84,7 @@ export const mainCommand = defineCommand({
 
     if (args.date === 'today') {
       const date = new Date()
-      args.date = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+      args.date = `${date.getFullYear().toString().padStart(4, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
     }
 
     if (args.access !== 'public' && args.access !== 'private' && args.access !== 'all') {

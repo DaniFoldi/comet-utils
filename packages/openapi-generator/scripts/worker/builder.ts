@@ -14,9 +14,17 @@ export function wrapFetch(originalFetch: FetchHandler): { fetch: FetchHandler } 
         const router = Server.getRouter(server)
         const routes = router.getRoutes()
 
-        const paths = buildPaths(routes, searchParams.get('date') ?? '')
+        const paths = buildPaths(server, routes, searchParams.get('date') ?? '')
 
         return Response.json(paths)
+      }
+
+      if (pathname === '/__options__') {
+        // @ts-expect-error haha
+        const server: Server<never, never, never> = globalThis[searchParams.get('entry') ?? 'worker']
+        const options = Server.getOptions(server)
+
+        return Response.json(options)
       }
 
       return originalFetch(request)
