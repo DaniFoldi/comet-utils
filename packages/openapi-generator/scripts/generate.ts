@@ -11,6 +11,7 @@ import type { mainCommand } from './index'
 import type { Paths } from './types'
 import type { CommandDef, ParsedArgs } from 'citty'
 import type { ServerOptions } from '@neoaren/comet'
+import builtinModules from 'builtin-modules'
 
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
@@ -43,7 +44,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   await build({
     entryPoints: [ args.input ],
     bundle: true,
-    external: [ 'node:*', 'cloudflare:*' ],
+    external: [ 'node:*', 'cloudflare:*', ...builtinModules ],
     conditions: [ 'workerd', 'worker', 'browser' ],
     legalComments: 'inline',
     outfile: tmpFilename,
