@@ -83,6 +83,8 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     ]
   })
 
+  let worker
+
   try {
     const script = (await readFile(tmpFilename, { encoding: 'utf8' }))
       .replace(/\b(\w+) as default(?!\.)(.*?)}/s, 'wrappedDefault as default, $2}; var wrappedDefault = globalThis.wrapFetch($1)')
@@ -96,7 +98,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     await writeFile(tmpFilename, wrappedScript)
 
-    const worker = await unstable_startWorker({
+    worker = await unstable_startWorker({
       entrypoint: tmpFilename,
       compatibilityDate: '2024-11-01',
       compatibilityFlags: [ 'nodejs_compat' ]
@@ -143,7 +145,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const prefixedMappedPaths = Object.fromEntries(Object
       .entries(combinedData)
-      .flatMap(([entry, entryPaths]) => {
+      .flatMap(([ entry, entryPaths ]) => {
         return Object.entries(entryPaths).map(([ path, value ]) => {
           return [ path.replaceAll(/(?<=\/):([^/]*)/gm, (_, group) => `{${group}}`), value ]
         })
@@ -155,6 +157,12 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
   } catch (error) {
     console.error(error)
   } finally {
+    try {
+      worker?.dispose()
+    } catch (error) {
+      console.error(error)
+    }
+
     await unlink(tmpFilename)
   }
 }
