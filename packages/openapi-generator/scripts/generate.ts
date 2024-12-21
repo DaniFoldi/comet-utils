@@ -1,6 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import process from 'node:process'
 import { defu } from 'defu'
 import { build } from 'esbuild'
 import { unstable_startWorker } from 'wrangler'
@@ -15,6 +16,18 @@ import builtinModules from 'builtin-modules'
 
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
+
+function tryParseNumber(value: string | undefined, float = false): number | undefined {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  try {
+    return float ? Number.parseFloat(value) : Number.parseInt(value)
+  } catch {
+    return undefined
+  }
+}
 
 async function textReplacements(text: string, entries: string[] = [ 'worker' ]): Promise<string> {
   // replace /** with /*! to prevent removal of comments
@@ -101,7 +114,12 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
     worker = await unstable_startWorker({
       entrypoint: tmpFilename,
       compatibilityDate: '2024-11-01',
-      compatibilityFlags: [ 'nodejs_compat' ]
+      compatibilityFlags: [ 'nodejs_compat' ],
+      dev: {
+        inspector: {
+          port: tryParseNumber(process.env.PORT)
+        }
+      }
     })
 
     await worker.ready
