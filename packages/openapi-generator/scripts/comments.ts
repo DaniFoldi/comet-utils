@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser'
 import babelTraverse, { NodePath } from '@babel/traverse'
 import type { Paths } from './types'
-import type { CallExpression, ExpressionStatement, Node, ObjectProperty } from '@babel/types'
+import type { CallExpression, ExpressionStatement, ObjectProperty } from '@babel/types'
 
 
 type JSDocParameters = {

@@ -34,6 +34,7 @@ function compareDatesBeforeToday(
     return date1 === undefined ? date2 : date1
   }
 
+  // eslint-disable-next-line unicorn/prefer-math-min-max
   return date1 > date2 ? date1 : date2
 }
 

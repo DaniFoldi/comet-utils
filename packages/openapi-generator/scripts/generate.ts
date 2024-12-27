@@ -7,6 +7,7 @@ import { build } from 'esbuild'
 import { unstable_startWorker } from 'wrangler'
 import { attachComments, collectMiddlewares } from './comments'
 import { randomName } from './random'
+import getPort from 'get-port'
 import temporaryDirectory from 'temp-dir'
 import type { mainCommand } from './index'
 import type { Paths } from './types'
@@ -16,18 +17,6 @@ import builtinModules from 'builtin-modules'
 
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
-
-function tryParseNumber(value: string | undefined, offset?: number): number | undefined {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  try {
-    return Number.parseInt(value) + (offset ?? 0)
-  } catch {
-    return undefined
-  }
-}
 
 async function textReplacements(text: string, entries: string[] = [ 'worker' ]): Promise<string> {
   // replace /** with /*! to prevent removal of comments
@@ -113,14 +102,14 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     worker = await unstable_startWorker({
       entrypoint: tmpFilename,
-      compatibilityDate: '2024-11-01',
+      compatibilityDate: '2024-12-01',
       compatibilityFlags: [ 'nodejs_compat' ],
       dev: {
         inspector: {
-          port: tryParseNumber(process.env.PORT, 1)
+          port: await getPort({ port: 9229 })
         },
         server: {
-          port: tryParseNumber(process.env.PORT)
+          port: await getPort({ port: 8787 })
         }
       }
     })
@@ -166,7 +155,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const prefixedMappedPaths = Object.fromEntries(Object
       .entries(combinedData)
-      .flatMap(([ entry, entryPaths ]) => {
+      .flatMap(([ _entry, entryPaths ]) => {
         return Object.entries(entryPaths).map(([ path, value ]) => {
           return [ path.replaceAll(/(?<=\/):([^/]*)/gm, (_, group) => `{${group}}`), value ]
         })
