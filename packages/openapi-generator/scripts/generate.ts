@@ -17,13 +17,13 @@ import builtinModules from 'builtin-modules'
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
 
-function tryParseNumber(value: string | undefined, float = false): number | undefined {
+function tryParseNumber(value: string | undefined, offset?: number): number | undefined {
   if (typeof value !== 'string') {
     return undefined
   }
 
   try {
-    return float ? Number.parseFloat(value) : Number.parseInt(value)
+    return Number.parseInt(value) + (offset ?? 0)
   } catch {
     return undefined
   }
@@ -117,6 +117,9 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
       compatibilityFlags: [ 'nodejs_compat' ],
       dev: {
         inspector: {
+          port: tryParseNumber(process.env.PORT, 1)
+        },
+        server: {
           port: tryParseNumber(process.env.PORT)
         }
       }
