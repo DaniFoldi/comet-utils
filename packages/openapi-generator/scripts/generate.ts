@@ -100,21 +100,42 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     await writeFile(tmpFilename, wrappedScript)
 
-    worker = await unstable_startWorker({
-      entrypoint: tmpFilename,
-      compatibilityDate: '2024-12-01',
-      compatibilityFlags: [ 'nodejs_compat' ],
-      dev: {
-        inspector: {
-          port: await getPort({ port: 9229 })
-        },
-        server: {
-          port: await getPort({ port: 8787 })
+    let attempt = 0
+
+    do {
+      try {
+        await Promise.race([
+          async () => {
+            worker = await unstable_startWorker({
+              entrypoint: tmpFilename,
+              compatibilityDate: '2024-12-01',
+              compatibilityFlags: [ 'nodejs_compat' ],
+              dev: {
+                inspector: {
+                  port: await getPort({ port: 9229 })
+                },
+                server: {
+                  port: await getPort({ port: 8787 })
+                }
+              }
+            })
+            await worker.ready
+          },
+          // eslint-disable-next-line promise/avoid-new
+          new Promise<void>(resolve => setTimeout(() => resolve(), 20000))
+        ])
+        attempt++
+        break
+      } catch {
+        if (++attempt > 5) {
+          throw new Error('Failed to start the worker after 5 attempts.')
         }
       }
-    })
+    } while (attempt < 5 && !worker)
 
-    await worker.ready
+    if (!worker) {
+      throw new Error('Failed to start the worker.')
+    }
 
     const combinedData: Record<string, Paths> = {}
     const combinedOptions: Record<string, ServerOptions<never, never, never>> = {}
