@@ -28,7 +28,7 @@ async function textReplacements(text: string, entries: string[] = [ 'worker' ]):
       // eslint-disable-next-line security/detect-non-literal-regexp
       const serverVariable = text.match(new RegExp(`(const|let|var) (${entry}\\d*) ?= ?server\\(`, 'si'))?.[2]
       if (typeof serverVariable === 'string') {
-        console.log('server', entry, serverVariable)
+        console.log('openapi generator found server', entry, serverVariable)
         text = `${text}
 globalThis['${entry}'] = ${serverVariable}`
       }

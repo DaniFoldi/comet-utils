@@ -1,37 +1,39 @@
-import getPort from 'get-port'
-import { unstable_startWorker } from 'wrangler'
+import getPort, { portNumbers } from 'get-port'
+import { unstable_startWorker, unstable_readConfig, experimental_readRawConfig } from 'wrangler'
 
-export async function spawnWorker(file: string, depth = 0): Promise<ReturnType<typeof unstable_startWorker>> {
+export async function spawnWorker(file: string, dir: string, depth = 0): Promise<ReturnType<typeof unstable_startWorker>> {
   if (depth >= 5) {
     throw new Error('Failed to spawn worker.')
   }
 
   // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
-  return new Promise(async (resolve, reject) => {
+  return new Promise(async resolve => {
     try {
-      console.log('try')
+      const config = unstable_readConfig({ config: dir })
+
+      const r = Math.floor(Math.random() * 1000)
 
       const worker = await unstable_startWorker({
+        name: config.name,
         entrypoint: file,
-        compatibilityDate: '2024-12-01',
-        compatibilityFlags: [ 'nodejs_compat' ],
+        compatibilityDate: config.compatibility_date,
+        compatibilityFlags: config.compatibility_flags,
         dev: {
           inspector: {
-            port: await getPort({ port: 9229 })
+            port: await getPort({ port: portNumbers(61000 + r, 62000 + r) })
           },
           server: {
-            port: await getPort({ port: 8787 })
-          }
+            port: await getPort({ port: portNumbers(63000 + r, 64000 + r) })
+          },
+          logLevel: 'warn'
         }
       })
-      console.log('spawn')
       await worker.ready
-      console.log('ready')
 
       resolve(worker)
     } catch (error) {
       console.log(error)
-      resolve(await spawnWorker(file, depth + 1))
+      resolve(await spawnWorker(file, dir, depth + 1))
     }
   })
 }
