@@ -12,7 +12,8 @@ import type { Paths } from './types'
 import type { CommandDef, ParsedArgs } from 'citty'
 import type { ServerOptions } from '@neoaren/comet'
 import builtinModules from 'builtin-modules'
-import { spawnWorker } from './spawn-worker'
+import getPort, { portNumbers } from 'get-port'
+import { unstable_startWorker, unstable_readConfig } from 'wrangler'
 
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
@@ -99,7 +100,26 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     await writeFile(tmpFilename, wrappedScript)
 
-    worker = await spawnWorker(tmpFilename)
+    const config = unstable_readConfig({ config: dir })
+
+    const r = Math.floor(Math.random() * 1000)
+
+    worker = await unstable_startWorker({
+      name: config.name,
+      entrypoint: tmpFilename,
+      compatibilityDate: config.compatibility_date,
+      compatibilityFlags: config.compatibility_flags,
+      dev: {
+        inspector: {
+          port: await getPort({ port: portNumbers(61000 + r, 62000 + r) })
+        },
+        server: {
+          port: await getPort({ port: portNumbers(63000 + r, 64000 + r) })
+        },
+        logLevel: 'warn'
+      }
+    })
+    await worker.ready
 
     const combinedData: Record<string, Paths> = {}
     const combinedOptions: Record<string, ServerOptions<never, never, never>> = {}
