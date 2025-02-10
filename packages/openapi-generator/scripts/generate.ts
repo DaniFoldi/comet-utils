@@ -105,7 +105,7 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     const configFile = await findUp([ 'wrangler.json', 'wrangler.jsonc', 'wrangler.toml' ])
 
-    const config = unstable_readConfig({ config: dirname(configFile ?? dir) })
+    const config = unstable_readConfig({ config: configFile ?? dir })
 
     const r = Math.floor(Math.random() * 1000)
 
