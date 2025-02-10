@@ -14,6 +14,7 @@ import type { ServerOptions } from '@neoaren/comet'
 import builtinModules from 'builtin-modules'
 import getPort, { portNumbers } from 'get-port'
 import { unstable_startWorker, unstable_readConfig } from 'wrangler'
+import { findUp } from 'find-up'
 
 
 type Args<Type> = Type extends CommandDef<infer X> ? X : never
@@ -37,6 +38,8 @@ globalThis['${entry}'] = ${serverVariable}`
   }
 
   return text
+    .replaceAll(/^import\s*{.*?Pool.*?}\s*from\s*["']pg["']/gm, 'const Pool = class Pool {}')
+    .replaceAll(/^import\s*{.*?PrismaPg.*?}\s*from\s*["']@prisma\/adapter-pg["']/gm, 'const PrismaPg = class PrismaPg {}')
 }
 
 export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data: object) {
@@ -100,7 +103,9 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
     await writeFile(tmpFilename, wrappedScript)
 
-    const config = unstable_readConfig({ config: dir })
+    const configFile = await findUp([ 'wrangler.json', 'wrangler.jsonc', 'wrangler.toml' ])
+
+    const config = unstable_readConfig({ config: dirname(configFile ?? dir) })
 
     const r = Math.floor(Math.random() * 1000)
 
