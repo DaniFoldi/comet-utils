@@ -1,6 +1,6 @@
 {
   "name": "@comet-utils/openapi-generator",
-  "version": "0.2.49",
+  "version": "0.2.50",
   "description": "Openapi generator for comet",
   "keywords": [
     "cloudflare-workers",
