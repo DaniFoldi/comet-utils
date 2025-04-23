@@ -3,7 +3,7 @@ import { defineCommand, runMain } from 'citty'
 import { z } from 'zod'
 import { generate } from './generate'
 import { fileExists } from './utils'
-import OpenAPIParser from '@readme/openapi-parser'
+import { validate } from '@readme/openapi-parser'
 
 
 export const mainCommand = defineCommand({
@@ -96,7 +96,7 @@ export const mainCommand = defineCommand({
     await generate(args, data)
 
     try {
-      const result = await OpenAPIParser.validate(args.output)
+      const result = await validate(args.output)
       console.log('OpenAPI schema is valid:', result)
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'details' in error) {

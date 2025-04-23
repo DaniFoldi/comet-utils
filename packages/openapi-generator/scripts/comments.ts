@@ -27,7 +27,7 @@ export function attachComments(
   prefix: string = ''
 ) {
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
-  if (astree.errors.length > 0) {
+  if ((astree.errors?.length ?? 0) > 0) {
     console.error(astree.errors)
 
     return
@@ -181,7 +181,7 @@ export function attachComments(
 export function collectMiddlewares(code: string): { name: string; params: MiddlewareParameters }[] {
   const middlewares: { name: string; params: MiddlewareParameters }[] = []
   const astree = parse(code, { attachComment: true, plugins: [], sourceType: 'module' })
-  if (astree.errors.length > 0) {
+  if ((astree.errors?.length ?? 0) > 0) {
     console.error(astree.errors)
 
     return middlewares
@@ -244,9 +244,11 @@ function parseComment(comments: string): JSDocParameters {
 
     switch (head) {
       case 'description':
+        // eslint-disable-next-line @typescript-eslint/no-misused-spread
         commentsByType.description = [ ...commentsByType.description ?? [], rest.join(' ').trim() ].join('\n')
         break
       case 'summary':
+        // eslint-disable-next-line @typescript-eslint/no-misused-spread
         commentsByType.summary += [ ...commentsByType.summary ?? [], rest.join(' ').trim() ].join('\n')
         break
       case 'tag':
