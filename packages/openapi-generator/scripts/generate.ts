@@ -120,15 +120,26 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
         },
         server: {
           port: await getPort({ port: portNumbers(63000 + r, 64000 + r) })
-        }
+        },
+        logLevel: 'debug',
+        remote: false,
+        registry: null
+      },
+      sendMetrics: false,
+      build: {
+        nodejsCompatMode: 'v2'
       }
     })
+    console.log('Creating worker')
     await worker.ready
+    console.log('Worker ready')
 
     const combinedData: Record<string, Paths> = {}
     const combinedOptions: Record<string, ServerOptions<never, never, never>> = {}
 
     for (const entry of args.entry.split(',')) {
+      console.log(`Generating OpenAPI paths for ${entry}`)
+
       const response = await worker.fetch(`http://internal/__generate_openapi__?date=${args.date}&entry=${entry}`)
       if (response.headers.get('content-type') !== 'application/json') {
         console.debug(await response.text())
@@ -141,6 +152,8 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
       const code = await readFile(tmpFilename, { encoding: 'utf8' })
       const middlewares = collectMiddlewares(code)
 
+      console.log('Middlewares found:', middlewares)
+
       const optionsResponse = await worker.fetch(`http://internal/__options__?entry=${entry}`)
       if (optionsResponse.headers.get('content-type') !== 'application/json') {
         console.debug(await optionsResponse.text())
@@ -150,6 +163,8 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
 
       const options = await optionsResponse.json() as ServerOptions<never, never, never>
       combinedOptions[entry] = options
+
+      console.log('Worker options', options)
 
       attachComments(script, paths, args.access, args.date, middlewares, options.prefix)
 
