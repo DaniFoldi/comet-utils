@@ -67,8 +67,8 @@ export const mainCommand = defineCommand({
         info: z.object({
           title: z.string().min(1),
           version: z.string().min(1)
-        })
-      }).parse(data)
+        }).passthrough()
+      }).passthrough().parse(data)
     } catch (error) {
       console.error(`Base file '${args.base}' must be a JSON object with non-empty info.title and info.version!`)
       console.error(error)
