@@ -1,5 +1,9 @@
 packages:
   - packages/*
-
-onlyBuiltDependencies:
+ignoredBuiltDependencies:
+  - '@neoaren/comet'
+  - esbuild
+  - oxc-resolver
+  - sharp
+  - unrs-resolver
   - workerd

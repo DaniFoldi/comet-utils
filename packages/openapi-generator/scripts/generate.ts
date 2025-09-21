@@ -121,9 +121,8 @@ export async function generate(args: ParsedArgs<Args<typeof mainCommand>>, data:
         server: {
           port: await getPort({ port: portNumbers(63000 + r, 64000 + r) })
         },
-        logLevel: 'debug',
-        remote: false,
-        registry: null
+        logLevel: 'info',
+        remote: false
       },
       sendMetrics: false,
       build: {

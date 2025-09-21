@@ -93,14 +93,14 @@ const replies: Record<Status, number> = {
 
 
 export function routeToOpenApiOperation(route: Route): Operation {
-  const path = objectSchemaToParameters(route.schemas.params, 'path')
-  const query = objectSchemaToParameters(route.schemas.query, 'query')
+  const path = objectSchemaToParameters(route.schemas.params as ZodType, 'path')
+  const query = objectSchemaToParameters(route.schemas.query as ZodType, 'query')
   const compatibilityDate: Parameter | undefined = route.compatibilityDate ? { name: 'x-compatibility-date', in: 'header', description: '', required: true, schema: convertSchema(z.literal(route.compatibilityDate)) } : undefined
 
   const parameters = [ ...path ?? [], ...query ?? [], ...compatibilityDate ? [ compatibilityDate ] : [] ]
 
 
-  const bodySchema = route.schemas.body ? convertSchema(route.schemas.body) : {}
+  const bodySchema = route.schemas.body ? convertSchema(route.schemas.body as ZodType) : {}
   const requestBody = bodySchema ? {
     content: {
       'application/json': {
@@ -108,7 +108,7 @@ export function routeToOpenApiOperation(route: Route): Operation {
           .filter(entry => entry[1] !== undefined))
       }
     } as { [key: string]: object },
-    required: !route.schemas.body?.isOptional()
+    required: !(route.schemas.body as ZodType)?.isOptional()
   } : undefined
   const responses = route.replies
     ? Object.fromEntries(Object.entries(route.replies).map(reply =>
@@ -117,7 +117,7 @@ export function routeToOpenApiOperation(route: Route): Operation {
           content: {
             'application/json': {
               schema:
-                convertSchema(reply[1])
+                convertSchema(reply[1] as ZodType)
             }
           },
           description: `Response for status ${reply[0]}`
